@@ -91,7 +91,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title="<p>59.0% of total for derived types.</p>Including implementation: 502 statements, 58.9% of total for derived types.">23 statements</a>
+                 title="<p>100.0% of total for derived types.</p>Including implementation: 504 statements, 100.0% of total for derived types.">23 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -143,7 +143,7 @@
             <a class="list-group-item" href="../type/shapefunc.html#variable-lagrange2">lagrange2</a>
             <a class="list-group-item" href="../type/shapefunc.html#variable-lagrange3">lagrange3</a>
             <a class="list-group-item" href="../type/shapefunc.html#variable-nodes">nodes</a>
-            <a class="list-group-item" href="../type/shapefunc.html#variable-order~2">order</a>
+            <a class="list-group-item" href="../type/shapefunc.html#variable-order~3">order</a>
             <a class="list-group-item" href="../type/shapefunc.html#variable-ounit">ounit</a>
             <a class="list-group-item" href="../type/shapefunc.html#variable-points">points</a>
             <a class="list-group-item" href="../type/shapefunc.html#variable-seq">seq</a>
@@ -269,7 +269,7 @@ First and second order mapping functions for [-1, 1] with infinity at 1</p>
         <tr>
             <td>
               <span class="anchor" id="variable-dime"></span>
-              integer(kind=ik),
+              integer,
             </td>
               <td>public</td>
             <td>
@@ -388,7 +388,7 @@ First and second order mapping functions for [-1, 1] with infinity at 1</p>
         <tr>
             <td>
               <span class="anchor" id="variable-nodes"></span>
-              integer(kind=ik),
+              integer,
             </td>
               <td>public</td>
             <td>
@@ -404,8 +404,8 @@ First and second order mapping functions for [-1, 1] with infinity at 1</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-order~2"></span>
-              integer(kind=ik),
+              <span class="anchor" id="variable-order~3"></span>
+              integer,
             </td>
               <td>public</td>
             <td>
@@ -439,7 +439,7 @@ First and second order mapping functions for [-1, 1] with infinity at 1</p>
         <tr>
             <td>
               <span class="anchor" id="variable-points"></span>
-              integer(kind=ik),
+              integer,
             </td>
               <td>public</td>
             <td>
@@ -456,7 +456,7 @@ First and second order mapping functions for [-1, 1] with infinity at 1</p>
         <tr>
             <td>
               <span class="anchor" id="variable-seq"></span>
-              integer(kind=ik),
+              integer,
             </td>
               <td>public,</td>
             <td>
@@ -862,7 +862,7 @@ First and second order mapping functions for [-1, 1] with infinity at 1</p>
         <tr>
             <td>
               <span class="anchor" ></span>
-              class(<a href='cubature.html'>Cubature</a>),
+              class(Cubature),
             </td>
 <td>intent(in)</td>
               <td></td>            <td>
@@ -877,7 +877,7 @@ First and second order mapping functions for [-1, 1] with infinity at 1</p>
         <tr>
             <td>
               <span class="anchor" ></span>
-              integer(kind=ik),
+              integer,
             </td>
 <td>intent(in)</td>
               <td></td>            <td>
@@ -1033,10 +1033,10 @@ First and second order mapping functions for [-1, 1] with infinity at 1</p>
 <span class="w">    </span><span class="c">!!       coordinate (likewise with triangles)</span>
 
 <span class="w">    </span><span class="kt">character</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">elmtype</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;&quot;</span><span class="w">    </span><span class="c">!! Element type</span>
-<span class="w">    </span><span class="kt">integer</span><span class="p">(</span><span class="n">ik</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">dime</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="w">         </span><span class="c">!! Dimension</span>
-<span class="w">    </span><span class="kt">integer</span><span class="p">(</span><span class="n">ik</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">order</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="w">        </span><span class="c">!! Order</span>
-<span class="w">    </span><span class="kt">integer</span><span class="p">(</span><span class="n">ik</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">nodes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="w">        </span><span class="c">!! Nodes</span>
-<span class="w">    </span><span class="kt">integer</span><span class="p">(</span><span class="n">ik</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">points</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="w">       </span><span class="c">!! Cubature points</span>
+<span class="w">    </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">dime</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="w">         </span><span class="c">!! Dimension</span>
+<span class="w">    </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">order</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="w">        </span><span class="c">!! Order</span>
+<span class="w">    </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">nodes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="w">        </span><span class="c">!! Nodes</span>
+<span class="w">    </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">points</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="w">       </span><span class="c">!! Cubature points</span>
 <span class="w">    </span><span class="kt">character</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">inf</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;FIN&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;FIN&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;FIN&quot;</span><span class="p">]</span><span class="w">    </span><span class="c">!! Infinitude</span>
 <span class="w">    </span><span class="kt">real</span><span class="p">(</span><span class="n">rk</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">func</span><span class="p">(:,:)</span><span class="w">      </span><span class="c">!! Shape function values (nodes,points)</span>
 <span class="w">    </span><span class="kt">real</span><span class="p">(</span><span class="n">rk</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">derv</span><span class="p">(:,:,:)</span><span class="w">    </span><span class="c">!! Shape function first derivatives (dimension,nodes,points)</span>
@@ -1047,7 +1047,7 @@ First and second order mapping functions for [-1, 1] with infinity at 1</p>
 <span class="w">    </span><span class="c">! Function pointers</span>
 <span class="w">    </span><span class="k">procedure</span><span class="p">(</span><span class="n">lagrpoly</span><span class="p">),</span><span class="w"> </span><span class="k">pointer</span><span class="p">,</span><span class="w"> </span><span class="k">nopass</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">lagrange1</span><span class="p">,</span><span class="w"> </span><span class="n">lagrange2</span><span class="p">,</span><span class="w"> </span><span class="n">lagrange3</span>
 
-<span class="w">    </span><span class="kt">integer</span><span class="p">(</span><span class="n">ik</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">seq</span><span class="p">(:,:)</span><span class="w">    </span><span class="c">!! Nodal numbering sequence</span>
+<span class="w">    </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">seq</span><span class="p">(:,:)</span><span class="w">    </span><span class="c">!! Nodal numbering sequence</span>
 
 <span class="w">    </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">ounit</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">stdout</span>
 <span class="w">  </span><span class="k">contains</span>
@@ -1086,7 +1086,7 @@ First and second order mapping functions for [-1, 1] with infinity at 1</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2025-09-10 11:14 +0200             </p>
+ on 2025-09-10 20:59 +0200             </p>
           </div>
         </div>
         <br>
