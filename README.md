@@ -66,5 +66,3 @@ call shapes%show()
 ## To do
 
 - Infinite domain wedges
-
-- Unit testing

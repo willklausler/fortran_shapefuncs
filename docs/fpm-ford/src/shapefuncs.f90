@@ -3,21 +3,21 @@ module shapefuncs
 !! triangles, quadrilateral, tetrahedron, and hexahedron elements
 !! Use cubature module with derived type
 
-  use iso_fortran_env, only: ik => int32, rk => real64, stdout => output_unit
+  use iso_fortran_env, only: rk => real64, stdout => output_unit
   use cubatures, only: cubature, counter
 
   implicit none
 
   private
 
-  integer, parameter :: shaporders(*) = [4, 4, 4, 4, 2]
+  integer, parameter :: shaporders(*) = [4, 3, 4, 3, 4, 2]
 
   public :: shaporders
 
   abstract interface
     !! Abstract interface to allow procedure pointers
     pure module subroutine lagrpoly(order,x, func,derv,curv)
-      integer(ik), intent(in) :: order
+      integer, intent(in) :: order
       real(rk), intent(in) :: x
       real(rk), intent(out) :: func(order+1), derv(order+1), curv(order+1)
     end subroutine lagrpoly
@@ -33,10 +33,10 @@ module shapefuncs
     !!       coordinate (likewise with triangles)
 
     character(3) :: elmtype = ""    !! Element type
-    integer(ik) :: dime = 0         !! Dimension
-    integer(ik) :: order = 0        !! Order
-    integer(ik) :: nodes = 0        !! Nodes
-    integer(ik) :: points = 0       !! Cubature points
+    integer :: dime = 0         !! Dimension
+    integer :: order = 0        !! Order
+    integer :: nodes = 0        !! Nodes
+    integer :: points = 0       !! Cubature points
     character(3) :: inf(3) = ["FIN", "FIN", "FIN"]    !! Infinitude
     real(rk), allocatable :: func(:,:)      !! Shape function values (nodes,points)
     real(rk), allocatable :: derv(:,:,:)    !! Shape function first derivatives (dimension,nodes,points)
@@ -47,7 +47,7 @@ module shapefuncs
     ! Function pointers
     procedure(lagrpoly), pointer, nopass :: lagrange1, lagrange2, lagrange3
 
-    integer(ik), allocatable :: seq(:,:)    !! Nodal numbering sequence
+    integer, allocatable :: seq(:,:)    !! Nodal numbering sequence
 
     integer :: ounit = stdout
   contains
@@ -94,7 +94,7 @@ subroutine summary(self)
     write(u,"(A20,I0)") "Element orders: ", self%order
     write(u,"(A20,I0)") "Element nodes: ", self%nodes
     write(u,"(A20,I0)") "Element points: ", self%points
-    write(u,"(A20,3(A3,:,','))") "Element infinitude: ", self%inf
+    write(u,"(A20,3(A3,:,', '))") "Element infinitude: ", self%inf
   end associate
 
 end subroutine summary
@@ -106,7 +106,7 @@ subroutine show(self)
 
   class(Shapefunc), intent(in) :: self
 
-  integer(ik) :: g, n
+  integer :: g, n
 
   character(11) :: fmt1 = "*(x,F20.15)"
 
@@ -309,14 +309,14 @@ pure subroutine set(self,cube,order,infin)
 
   class(Shapefunc), intent(inout) :: self
   class(Cubature), intent(in) :: cube             !! Cubature derived type
-  integer(ik), intent(in) :: order                !! Shape function order
+  integer, intent(in) :: order                !! Shape function order
   character(3), intent(in), optional :: infin(:)  !! Infinitude or chopitude along each direction
 
-  integer(ik) :: i
-  integer(ik) :: mem
-  integer(ik), parameter :: tri(4) = [3,  6, 10, 15]
-  integer(ik), parameter :: tet(4) = [4, 10, 20, 35]
-  integer(ik), parameter :: wej(4) = [6, 18, 40, 75]
+  integer :: i
+  integer :: mem
+  integer, parameter :: tri(4) = [3,  6, 10, 15]
+  integer, parameter :: tet(4) = [4, 10, 20, 35]
+  integer, parameter :: wej(4) = [6, 18, 40, 75]
 
   ! Wipe any existing data
   if (self%elmtype /= "") then
@@ -652,8 +652,8 @@ pure subroutine eval(self,cord, func,derv,curv)
   real(rk), intent(out) :: derv(self%dime,self%nodes)           !! Shape function derivatives
   real(rk), intent(out) :: curv(self%dime,self%dime,self%nodes) !! Shape function second derivatives
 
-  integer(ik) :: i, j, k, m, n
-  integer(ik) :: a(4)
+  integer :: i, j, k, m, n
+  integer :: a(4)
 
   real(rk) :: r
   real(rk) :: f(5,4) ! Directional shape function values      (node,coordinate)
@@ -677,12 +677,14 @@ pure subroutine eval(self,cord, func,derv,curv)
     call self%lagrange1(self%order  ,coord(1), &
       f(1:self%order+1,1),d(1:self%order+1,1),c(1:self%order+1,1))
   end if
-  if ("CHP" == self%inf(2)) then
-    call self%lagrange2(self%order+1,coord(2), &
-      f(1:self%order+2,2),d(1:self%order+2,2),c(1:self%order+2,2))
-  else
-    call self%lagrange2(self%order  ,coord(2), &
-      f(1:self%order+1,2),d(1:self%order+1,2),c(1:self%order+1,2))
+  if (self%dime >= 2) then
+    if ("CHP" == self%inf(2)) then
+      call self%lagrange2(self%order+1,coord(2), &
+        f(1:self%order+2,2),d(1:self%order+2,2),c(1:self%order+2,2))
+    else
+      call self%lagrange2(self%order  ,coord(2), &
+        f(1:self%order+1,2),d(1:self%order+1,2),c(1:self%order+1,2))
+    end if
   end if
   if (self%dime == 3) then
     if ("CHP" == self%inf(3)) then
@@ -851,7 +853,7 @@ end subroutine eval
 pure subroutine lagrfull(order,x, func,derv,curv)
 !! Provide lagrangian polynomials and derivatives for the domain [-1, 1]
 
-  integer(ik), intent(in) :: order            !! Polynomial order
+  integer, intent(in) :: order            !! Polynomial order
   real(rk), intent(in) :: x                   !! Point at which to evaluate
   real(rk), intent(out) :: func(abs(order)+1) !! Polynomial values
   real(rk), intent(out) :: derv(abs(order)+1) !! Polynomial derivatives
@@ -865,14 +867,14 @@ pure subroutine lagrfull(order,x, func,derv,curv)
     curv = [0.0_rk]
 
   case (1)
-    func = [-x+1,x+1]/2
+    func = [   -x+1,    x+1]/2
     derv = [-1.0_rk, 1.0_rk]/2
     curv = [ 0.0_rk, 0.0_rk]
 
   case (2)
     func = [x*(x-1)/2, 1.0_rk-x**2, x*(x+1)/2]
-    derv = [    x-0.5,           -2*x,     x+0.5]
-    curv = [1.0_rk,     -2.0_rk, 1.0_rk]
+    derv = [    x-0.5,        -2*x,     x+0.5]
+    curv = [   1.0_rk,     -2.0_rk,    1.0_rk]
 
   case (3)
     func = [        -(3*x+1)*(3*x-1)*(x-1),&
@@ -903,11 +905,11 @@ pure subroutine lagrfull(order,x, func,derv,curv)
             -4*( 8*x**3+ 6*x**2- 4*x-1)/3,&
                (16*x**3+12*x**2- 2*x-1)/6]
 
-    curv = [   (48*x**2-24*x- 2)/6,&
-            -4*(24*x**2-12*x- 4)/3,&
-                48*x**2     -10   ,&
-            -4*(24*x**3+12*x- 4)/3,&
-               (48*x**2+24*x- 2)/6]
+    curv = [( 24*x**2-12*x- 1)/3,&
+            (-96*x**2+24*x+16)/3,&
+            ( 48*x**2     -10)  ,&
+            (-96*x**2-24*x+16)/3,&
+            ( 48*x**2+24*x- 2)/6]
 
   case default
     error stop "shapefuncs: lagrfull invalid order"
@@ -920,7 +922,7 @@ end subroutine lagrfull
 pure subroutine lagrhalf(order,x, func,derv,curv)
 !! Provide lagrangian polynomials and derivatives for the domain [0, 1]
 
-  integer(ik), intent(in) :: order            !! Polynomial order
+  integer, intent(in) :: order            !! Polynomial order
   real(rk), intent(in) :: x                   !! Point at which to evaluate
   real(rk), intent(out) :: func(abs(order)+1) !! Polynomial values
   real(rk), intent(out) :: derv(abs(order)+1) !! Polynomial derivatives
@@ -958,7 +960,7 @@ pure subroutine lagrinf(order,x, func,derv,curv)
 !! Provide lagrangian polynomials and derivatives for the domain [-1, 1],
 !! for infinity at 1
 
-  integer(ik), intent(in) :: order            !! Polynomial order
+  integer, intent(in) :: order            !! Polynomial order
   real(rk), intent(in) :: x                   !! Point at which to evaluate
   real(rk), intent(out) :: func(abs(order)+1) !! Polynomial values
   real(rk), intent(out) :: derv(abs(order)+1) !! Polynomial derivatives
@@ -976,7 +978,7 @@ pure subroutine lagrinf(order,x, func,derv,curv)
   case (2)
     func = [(3*x+1)*(3*x-1)/4, -(x+1)*(3*x-1),  (x+1)*(3*x+1)/4]/(1-x)
     derv = [(-9*x*x+18*x-1)/4,    3*x*x-6*x-1, (-3*x*x+6*x+5)/4]/(1-x)**2
-    curv = [           4.0_rk,         8.0_rk,           4.0_rk]/(1-x)**3
+    curv = [           4.0_rk,        -8.0_rk,           4.0_rk]/(1-x)**3
 
   ! To complement cubic shape functions
   case (3)
@@ -988,8 +990,10 @@ pure subroutine lagrinf(order,x, func,derv,curv)
             -3*( 4*x**3- 5*x*x-2*x+1),   &
                  8*x**3- 8*x*x-8*x+2,    &
                (-4*x**3+ 3*x*x+6*x+1)/3]/(1-x)**2
-    curv = 0
-
+    curv = [(-16*x**3+48*x**2-48*x+4)/3, &
+            ( 12*x**3-36*x**2+36*x   ), &
+            (- 8*x**3+24*x**2-24*x- 4), &
+            (  4*x**3-12*x**2+12*x+ 8)/3]/(1-x)**3
 
   ! To complement quartic shape functions
   case (4)
@@ -1003,7 +1007,11 @@ pure subroutine lagrinf(order,x, func,derv,curv)
             3*(- 375*x**4+ 300*x**3+370*x*x-140*x-27)/32, &
               (  375*x**4- 200*x**3-470*x*x+ 40*x+63)/24, &
               (- 375*x**4+ 100*x**3+530*x*x+140*x-11)/192]/(1-x)**2
-    curv = 0
+    curv = [( 1875*x**4-5000*x**3+3750*x**2      -241)/96, &
+            (- 375*x**4+ 950*x**3- 600*x**2-150*x+ 79)/6, &
+            ( 1125*x**4-2700*x**3+1350*x**2+900*x-291)/16, &
+            (- 375*x**4+ 850*x**3- 300*x**2-450*x+ 83)/12, &
+            (  375*x**4- 800*x**3+ 150*x**2+600*x+ 59)/96]/(1-x)**3
 
   case default
     error stop "shapefuncs: lagrinf invalid order"

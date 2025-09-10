@@ -33,6 +33,9 @@ homepage = "https://github.com/willklausler/fortran_shapefuncs"
 [install]
    library = false
 
+[dependencies]
+fortran_cubatures = { git = "https://github.com/willklausler/fortran_cubatures", branch = "main" }
+
 # example
 #[[test]]
 #name="runTests"
