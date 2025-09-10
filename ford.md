@@ -6,11 +6,11 @@ src_dir: src
 output_dir: docs/fpm-ford
 project: easy
 summary: easy project
-project_github: https://github.com/johndoe/easy
+project_github: https://github.com/willklausler/fortran_shapefuncs
 project_download:
-author: John Doe
-author_email: johndoe@gmail.com
-github: https://github.com/johndoe/easy
+author: Will Klausler
+email: wklausler@protonmail.com
+github: https://github.com/willklausler/fortran_shapefuncs
 media_dir: docs/images
 exclude_dir: archive
              FODDER
@@ -18,6 +18,7 @@ display: public
          protected
 source: true
 proc_internals: true
+preprocess: False
 sort: permission-alpha
 favicon: docs/images/favicon.ico
 print_creation_date: true

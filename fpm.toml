@@ -2,13 +2,13 @@
 name = "easy"
 version = "0.1.0"
 license = "license"
-author = "Jane Doe"
-maintainer = "jane.doe@example.com"
-copyright = "Copyright 2021, Jane Doe"
+author = "Will Klausler"
+maintainer = "wklausler@protonmail.com"
+copyright = "Copyright 2025, Will Klausler"
 description = ""
 categories = [""]
 keywords = ["fortran", "fortran-package-manager"]
-homepage = "https://github.com/janedoe/easy"
+homepage = "https://github.com/willklausler/fortran_shapefuncs"
 
 [build]
    auto-executables = true
