@@ -7,10 +7,10 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
       <meta name="description" content="easy project">
-    <meta name="author" content="John Doe" >
+    <meta name="author" content="Will Klausler" >
     <link rel="icon" href="../favicon.png">
 
-    <title>easy__sample &ndash; easy</title>
+    <title>shapefuncs_example &ndash; easy</title>
 
     <!-- Bootstrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
@@ -62,6 +62,9 @@
                   <a class="nav-link" href="../lists/procedures.html">Procedures</a>
                 </li>
                 <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
+                <li class="nav-item">
                   <a class="nav-link" href="../lists/programs.html">Programs</a>
                 </li>
             </ul>
@@ -77,8 +80,7 @@
 
     <div class="container">
   <div class="row">
-    <h1>easy__sample
-      <small>Module</small>
+    <h1>shapefuncs_example      <small>Program</small>
       
     </h1>
       <div class="container p-2 mb-4 bg-light border rounded-3">
@@ -88,20 +90,20 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title="65.4% of total for modules and submodules.">17 statements</a>
+                 title="16.9% of total for programs.">11 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
               <i class="fa fa-code"></i>
-              <a href="../src/easy__sample.f90"> Source File</a>
+              <a href="../src/shapefuncs_example.f90"> Source File</a>
             </li>
         </ul>
       </div>
       <div class="col">
         <nav aria-label="breadcrumb">
           <ol class="breadcrumb justify-content-end mb-0">
-                <li class="breadcrumb-item"><a href='../sourcefile/easy__sample.f90.html'>easy__sample.f90</a></li>
-            <li class="breadcrumb-item active" aria-current="page">easy__sample</li>
+                <li class="breadcrumb-item"><a href='../sourcefile/shapefuncs_example.f90.html'>shapefuncs_example.f90</a></li>
+            <li class="breadcrumb-item active" aria-current="page">shapefuncs_example</li>
           </ol>
         </nav>
       </div>
@@ -116,31 +118,21 @@
   </script>
 
   </div>
-
+  
   <div class="row">
-    <div class="col-md-3">
-        <div id="sidebar">
+    <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
+      <div id="sidebar">
       <h3>Contents</h3>
   
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
       <div class="card mb-4">
-      <a data-bs-toggle="collapse" href="#funcs-0"
-         aria-expanded="false" aria-controls="funcs-0">
-         <h4 class="card-header bg-primary text-white">Functions</h4>
+      <a data-bs-toggle="collapse" href="#vars-0"
+         aria-expanded="false" aria-controls="vars-0">
+         <h4 class="card-header bg-primary text-white">Variables</h4>
       </a>
-      <div id="funcs-0" class="collapse">
+      <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../module/easy__sample.html#proc-mysin">mysin</a>
-            <a class="list-group-item" href="../module/easy__sample.html#proc-mysqrt">mysqrt</a>
+            <a class="list-group-item" href="../program/shapefuncs_example.html#variable-cuba">cuba</a>
+            <a class="list-group-item" href="../program/shapefuncs_example.html#variable-shaper">shaper</a>
         </div>
       </div>
     </div>
@@ -153,122 +145,130 @@
   
   
   
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    <div class="card card-primary">
+      <div class="card-header text-left"><h3 class="card-title">Source Code</h3></div>
+      <div class="list-group">
+        <a class="list-group-item" href="../program/shapefuncs_example.html#src">shapefuncs_example</a>
+      </div>
+    </div>
 
 
   </div>
 
     </div>
-
+    
     <div class="col-md-9" id='text'>
-      
-      
-      
-      <br>
+        <div class="card mb-4">
+      <h3 class="card-header card-title bg-light">Uses</h3>
+      <div class="card-body">
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item">
+              <ul class="list-inline">
+                  <li class="list-inline-item"><a href='../module/shapefuncs.html'>shapefuncs</a></li>
+                  <li class="list-inline-item"><a href='../module/cubatures.html'>cubatures</a></li>
+              </ul>
+            </li>
+        </ul>
+      </div>
+    </div>
 
+    <p>Demonstrate shape functions</p>
+<br>
 
-
-
-
-
-
-        <section>
-          <h2>Functions</h2>
-              <div class="card">
-    <div class="card-header codesum"><span class="anchor" id="proc-mysin"></span> <h3>public pure elemental function <a href='../proc/mysin.html'>mysin</a>(r) result(answer)  
-</h3></div>
-    <div class="card-body">
-          
-  
-
-  <h4>Arguments</h4>
+    <section>
+    <h2>Variables</h2>
       <table class="table table-striped varlist">
     <thead>
       <tr>
         <th scope="col">Type</th>
-<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col">Attributes</th>
         <th scope="col"></th>
         <th scope="col">Name</th>
-        <th scope="col"></th>
+<th></th><th scope="col">Initial</th>        <th scope="col"></th>
     </thead>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-r~2"></span>
-              real,
+              <span class="anchor" id="variable-cuba"></span>
+              type(<a href='../type/cubature.html'>Cubature</a>)
             </td>
-<td>intent(in)</td>
-              <td></td>            <td>
+            <td>
               
             </td>
             <td>::</td>
-            <td><strong>r</strong></td>
+            <td><strong>cuba</strong></td>
+                <td></td>
+                <td></td>
             <td>
-<p>MYSIN(3f) is a trivial function for demonstration purposes.</p>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-shaper"></span>
+              type(<a href='../type/shapefunc.html'>Shapefunc</a>)
+            </td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>shaper</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
             </td>
         </tr>
     </tbody>
   </table>
 
-    <h4>
-    Return Value
-    <small>real</small>
-    </h4>
+    </section>
+    <br>
+    
+    
     
 
-    </div>
-  </div>
-
-              <div class="card">
-    <div class="card-header codesum"><span class="anchor" id="proc-mysqrt"></span> <h3>public pure elemental function <a href='../proc/mysqrt.html'>mysqrt</a>(r) result(answer)  
-</h3></div>
-    <div class="card-body">
-          
-  
-
-  <h4>Arguments</h4>
-      <table class="table table-striped varlist">
-    <thead>
-      <tr>
-        <th scope="col">Type</th>
-<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
-        <th scope="col"></th>
-        <th scope="col">Name</th>
-        <th scope="col"></th>
-    </thead>
-    <tbody>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-r"></span>
-              real,
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>r</strong></td>
-            <td>
-<p>MYSQRT(3f) is a trivial function for demonstration purposes.</p>
-            </td>
-        </tr>
-    </tbody>
-  </table>
-
-    <h4>
-    Return Value
-    <small>real</small>
-    </h4>
     
 
-    </div>
-  </div>
 
-        </section>
-        <br>
+    
 
+    <section>
+    <h2 id="src">Source Code</h2>
+    <div class="hl codehilite"><pre><span></span><span class="k">program </span><span class="n">shapefuncs_example</span><span class="w"></span>
+<span class="c">!! Demonstrate shape functions</span>
 
+<span class="w">  </span><span class="k">use </span><span class="n">cubatures</span><span class="w"></span>
+<span class="w">  </span><span class="k">use </span><span class="n">shapefuncs</span><span class="w"></span>
 
+<span class="w">  </span><span class="k">implicit none</span>
 
+<span class="k">  type</span><span class="p">(</span><span class="n">Cubature</span><span class="p">)</span><span class="w">  </span><span class="kd">::</span><span class="w"> </span><span class="n">cuba</span><span class="w"></span>
+<span class="w">  </span><span class="k">type</span><span class="p">(</span><span class="n">Shapefunc</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">shaper</span><span class="w"></span>
+
+<span class="w">  </span><span class="k">call </span><span class="n">cuba</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="s2">&quot;HEX&quot;</span><span class="p">,[</span><span class="mi">2</span><span class="p">])</span><span class="w"></span>
+
+<span class="w">  </span><span class="k">call </span><span class="n">shaper</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">cuba</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span><span class="w"></span>
+
+<span class="w">  </span><span class="k">call </span><span class="n">shaper</span><span class="p">%</span><span class="n">show</span><span class="p">()</span><span class="w"></span>
+
+<span class="w">  </span><span class="k">call </span><span class="n">shaper</span><span class="p">%</span><span class="n">numbering</span><span class="p">()</span><span class="w"></span>
+
+<span class="k">end program </span><span class="n">shapefuncs_example</span><span class="w"></span>
+</pre></div>
+
+    </section>
+    
     </div>
   </div>
 
@@ -280,14 +280,14 @@
           <div class="col">
             <p>
               easy
- was developed by John Doe<br>              &copy; 2025 
+ was developed by Will Klausler<br>              &copy; 2025 
 </p>
           </div>
           <div class="col">
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2025-09-10 08:39 +0000             </p>
+ on 2025-09-10 09:17 +0000             </p>
           </div>
         </div>
         <br>
