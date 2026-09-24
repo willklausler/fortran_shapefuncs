@@ -45,7 +45,8 @@ GitHub Actions (`.github/workflows/ci.yml`) runs on every push and pull request:
   and NVIDIA nvfortran on Linux, and gfortran on macOS and Windows;
 - `make test`, `make example` and a staged `make install`, then a program
   compiled against the installed library;
-- a FORD documentation build.
+- a FORD documentation build, published to
+  [GitHub Pages](https://willklausler.github.io/fortran_shapefuncs/) on every push to `main`.
 
 ## Design
 

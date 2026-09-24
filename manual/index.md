@@ -31,3 +31,4 @@ mapped infinite elements of Zienkiewicz, Emson and Bettess.
 
 The pages are Markdown files in the `manual/` directory of the repository.
 `ford ford.md` renders them, together with the API documentation, into `docs/`.
+CI publishes the result at <https://willklausler.github.io/fortran_shapefuncs/>.

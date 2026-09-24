@@ -23,6 +23,8 @@ jobs:
         with:
           compiler: ${{ matrix.compiler }}
           version: ${{ matrix.version }}
+      - run: brew install gcc@12   # runtime of the prebuilt macOS fpm binary
+        if: runner.os == 'macOS'
       - uses: fortran-lang/setup-fpm@v10
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -42,7 +44,7 @@ jobs:
       - run: make test
       - run: make example
       - run: make install DESTDIR=$PWD/stage PREFIX=/usr
-      - run: gfortran example/shapefuncs_example.f90 -Istage/usr/include -Lstage/usr/lib -lfortran_shapefuncs -o example && ./example
+      - run: gfortran example/shapefuncs_example.f90 -Istage/usr/include -Lstage/usr/lib -lfortran_shapefuncs -o installed_example && ./installed_example
 
   docs:
     runs-on: ubuntu-24.04
@@ -53,3 +55,21 @@ jobs:
           python-version: '3.x'
       - run: pip install ford
       - run: ford ford.md
+      - uses: actions/upload-pages-artifact@v4
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        with:
+          path: docs
+
+  deploy:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: docs
+    runs-on: ubuntu-24.04
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

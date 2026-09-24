@@ -90,7 +90,8 @@ Invalid input stops with `error stop` and a message. The
 | `CUB_WED` | wedge | (p+1)²(p+2)/2 | ≥ 1 | axial (3) |
 
 The reference elements are those of `fortran_cubatures`. The
-[user manual](manual/index.md) describes the shape functions, the
+[user manual](manual/index.md) ([online](https://willklausler.github.io/fortran_shapefuncs/page/index.html),
+with the [API documentation](https://willklausler.github.io/fortran_shapefuncs/)) describes the shape functions, the
 [node numbering](manual/elements.md) and the
 [infinite elements](manual/infinite-elements.md).
 
@@ -110,7 +111,8 @@ element's function space with first and second derivatives, finite
 differences, and partition of unity. They also check the classical numbering
 node by node and closed forms from the literature. CI runs gfortran 13–15,
 Intel ifx and NVIDIA nvfortran on Linux, gfortran on macOS and Windows, the
-make build and the documentation build.
+make build and the documentation build, and publishes the documentation
+to GitHub Pages from `main`.
 
 ## Pedigree and support
 
