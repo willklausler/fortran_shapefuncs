@@ -19,22 +19,25 @@ ifx and NVIDIA nvfortran.
 ## What the tests check
 
 `test/shapefuncs_test.f90` sweeps every element type over a range of orders,
-and every combination of finite, infinite and chopped directions. For each
+and every combination of finite, infinite and chopped directions, and the
+serendipity quadrilaterals and hexahedra of orders 1 to 3. For each
 case it checks that the shape functions
 
 - are consistent (`is_valid`) and have the expected numbers of nodes and points;
 - are 1 at their own node and 0 at every other node;
 - reproduce every function of their space exactly at every cubature point,
   including its gradient and Hessian. For finite directions the space is the
-  polynomials, for mapping functions \(q(\xi)/(1-\xi)\), and for chopped
+  polynomials (for serendipity elements, those of superlinear degree
+  \(\le p\)), for mapping functions \(q(\xi)/(1-\xi)\), and for chopped
   functions \((1-\xi)\,q(\xi)\). Together with the nodal check, this proves
   that every function and derivative is correct;
 - have derivatives that agree with fourth-order finite differences, and
   symmetric second derivatives;
 - sum to 1 with derivatives summing to 0, or vanish at infinity when chopped.
 
-It also checks the classical numbering of orders 1 to 3 node by node, closed
-forms from the literature, integrals over each element, the constructor, `set`,
+It also checks the classical numbering of orders 1 to 3 node by node, the
+serendipity numbering, caller-defined orderings, closed forms from the
+literature (including the 8-node quadrilateral), integrals over each element, the constructor, `set`,
 reuse, `eval`, `destroy`, order 0 and the output routines.
 
 ## Continuous integration
@@ -57,7 +60,10 @@ Derivatives follow from the product rule and a constant chain-rule matrix.
 The one-dimensional functions are built as products of linear or rational
 factors, which gives exact derivatives for any order without closed-form
 polynomials. The node numbering is generated recursively (vertices, edges,
-faces, interior), so any order is supported.
+faces, interior), so any order is supported. Serendipity functions are
+fixed combinations of the tensor-product functions, found once by solving
+with the serendipity monomials at the nodes. A caller-defined ordering
+permutes the node data once in `set`, so evaluation costs nothing extra.
 
 ## Pedigree and support
 

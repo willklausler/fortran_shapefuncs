@@ -29,6 +29,16 @@ module shapefuncs
 !! on the order, but equispaced interpolation becomes ill-conditioned at
 !! high orders.
 !!
+!! ## Serendipity elements
+!!
+!! With `family = SHP_SERENDIPITY`, quadrilaterals and hexahedra of order
+!! 1 to 3 have nodes on their vertices and edges only: 4, 8 and 12 nodes
+!! for quadrilaterals, 8, 20 and 32 for hexahedra. They span the
+!! serendipity space: the monomials of superlinear degree \(\le p\) [7].
+!! Each serendipity function is a fixed combination of the tensor-product
+!! Lagrange functions of the same order, computed once by `set`.
+!! Serendipity elements must be finite.
+!!
 !! ## Factor coordinates
 !!
 !! Every shape function is a product of one-dimensional functions of
@@ -81,7 +91,14 @@ module shapefuncs
 !!
 !! These rules reproduce the classical numbering of the 4-, 9- and 16-node
 !! quadrilateral, 8- and 27-node hexahedron, 3-, 6- and 10-node triangle,
-!! 4-, 10- and 20-node tetrahedron and 6- and 18-node wedge.
+!! 4-, 10- and 20-node tetrahedron and 6- and 18-node wedge. Serendipity
+!! elements keep the vertex and edge nodes in the same order, which gives
+!! the classical 8- and 12-node quadrilateral and 20- and 32-node
+!! hexahedron.
+!!
+!! Any other numbering can be chosen at run time with the `nodes`
+!! argument of `set`, a permutation: the caller's node `k` is node
+!! `nodes(k)` of this numbering.
 !!
 !! ## Infinite elements
 !!
@@ -120,6 +137,9 @@ module shapefuncs
 !! 6. Zienkiewicz, O. C., Taylor, R. L., Zhu, J. Z. (2005). *The Finite
 !!    Element Method: Its Basis and Fundamentals*, 6th ed.
 !!    Butterworth-Heinemann.
+!! 7. Arnold, D. N., Awanou, G. (2011). The serendipity family of finite
+!!    elements. *Foundations of Computational Mathematics*, 11(3), 337–344.
+!!    doi:10.1007/s10208-011-9087-3
 
   use iso_fortran_env, only: output_unit
   use cubatures, only: cubature, rk, CUB_LIN, CUB_TRI, CUB_QUA, CUB_TET, CUB_HEX, CUB_WED
@@ -130,10 +150,14 @@ module shapefuncs
 
   public :: shapefunc
   public :: SHP_FIN, SHP_INF, SHP_CHP
+  public :: SHP_LAGRANGE, SHP_SERENDIPITY
 
   integer, parameter :: SHP_FIN = 1 !! Finite direction: Lagrange polynomials on \([-1,1]\)
   integer, parameter :: SHP_INF = 2 !! Infinite direction, mapping functions for coordinates
   integer, parameter :: SHP_CHP = 3 !! Infinite direction, chopped functions for the solution
+
+  integer, parameter :: SHP_LAGRANGE    = 1 !! Full Lagrange (tensor-product or complete) elements
+  integer, parameter :: SHP_SERENDIPITY = 2 !! Serendipity quadrilaterals and hexahedra, orders 1 to 3
 
   integer, parameter :: SIMPLEX = 4 !! Factor family: Silvester polynomials on \([0,1]\)
 
@@ -141,18 +165,22 @@ module shapefuncs
     !! Element names, indexed by element type
   character(3), parameter :: infnames(3) = ["FIN", "INF", "CHP"]
     !! Infinitude names, indexed by `SHP_*`
+  character(11), parameter :: familynames(2) = ["Lagrange   ", "Serendipity"]
+    !! Family names, indexed by `SHP_LAGRANGE`, `SHP_SERENDIPITY`
 
   type :: shapefunc
     !! Shape functions and derivatives of one element type and order at
     !! the points of a cubature.
     !!
     !! Create with the constructor, `s = shapefunc(q, 2)`, or in place with
-    !! `call s%set(q, 2)`, where `q` is a `cubature`. Infinite directions
-    !! are flagged with the optional `infin` argument.
+    !! `call s%set(q, 2)`, where `q` is a `cubature`. Optional arguments
+    !! flag infinite directions (`infin`), choose serendipity elements
+    !! (`family`) and set the node ordering (`nodes`).
 
     integer :: elm = 0                          !! Element type, `CUB_*`
     integer :: dim = 0                          !! Spatial dimension
     integer :: order = 0                        !! Polynomial order
+    integer :: family = SHP_LAGRANGE            !! `SHP_LAGRANGE` or `SHP_SERENDIPITY`
     integer :: nnodes = 0                       !! Number of nodes
     integer :: npoints = 0                      !! Number of cubature points
     integer :: infin(3) = SHP_FIN               !! Infinitude per direction, `SHP_*`
@@ -163,9 +191,11 @@ module shapefuncs
     real(rk), allocatable :: curv(:,:,:,:)      !! Second derivatives \(\partial^2 N_i/\partial\xi_j\partial\xi_k\), shape `[dim, dim, nnodes, npoints]`
 
     integer, private :: nfactors = 0            ! Number of factor coordinates
-    integer, private :: family(4) = 0           ! 1D function family per factor, `SHP_*` or `SIMPLEX`
+    integer, private :: kinds(4) = 0            ! 1D function family per factor, `SHP_*` or `SIMPLEX`
     real(rk), private :: s0(4) = 0              ! Factor coordinates at \(\xi = 0\)
     real(rk), private :: dsdxi(4,3) = 0         ! Constant \(\partial s_k/\partial\xi_j\)
+    integer, allocatable, private :: basis(:,:) ! Lattice of the product functions evaluated by `eval`
+    real(rk), allocatable, private :: trans(:,:)! Serendipity functions from product functions, `[nnodes, size(basis,2)]`
 
   contains
 
@@ -180,8 +210,9 @@ module shapefuncs
   end type shapefunc
 
   interface shapefunc
-    !! Construct shape functions, e.g. `shapefunc(q, 2)` or
-    !! `shapefunc(q, 1, [SHP_FIN, SHP_INF])`
+    !! Construct shape functions, e.g. `shapefunc(q, 2)`,
+    !! `shapefunc(q, 1, [SHP_FIN, SHP_INF])` or
+    !! `shapefunc(q, 2, family=SHP_SERENDIPITY, nodes=perm)`
     module procedure new_shapefunc
   end interface shapefunc
 
@@ -189,34 +220,48 @@ contains
 
 !***********************************************************************
 
-pure function new_shapefunc(q, order, infin) result(self)
-!! Construct shape functions of order `order` at the points of `q`
+pure function new_shapefunc(q, order, infin, family, nodes) result(self)
+!! Construct shape functions of order `order` at the points of `q`; see `set`
 
   type(cubature), intent(in) :: q            !! Cubature on the reference element
   integer, intent(in) :: order               !! Polynomial order
-  integer, intent(in), optional :: infin(:)  !! Infinitude, `SHP_*`, size 1 or `q%dim`
+  integer, intent(in), optional :: infin(:)  !! Infinitude, `SHP_FIN`, `SHP_INF` or `SHP_CHP`, size 1 or `q%dim`
+  integer, intent(in), optional :: family    !! `SHP_LAGRANGE` (default) or `SHP_SERENDIPITY`
+  integer, intent(in), optional :: nodes(:)  !! Node ordering: `nodes(k)` is the default number of node `k`
   type(shapefunc) :: self
 
-  call self%set(q, order, infin)
+  call self%set(q, order, infin, family, nodes)
 
 end function new_shapefunc
 
 !***********************************************************************
 
-pure subroutine set(self, q, order, infin)
+pure subroutine set(self, q, order, infin, family, nodes)
 !! Build shape functions of order `order` at the points of `q`.
 !!
 !! `infin` has size 1 (same in every direction) or `q%dim`, and defaults to
 !! [[SHP_FIN]]. [[SHP_INF]] and [[SHP_CHP]] are allowed along the
 !! directions of lines, quadrilaterals and hexahedra, and along the axial
-!! direction 3 of wedges, with order \(\ge 1\). Stops on invalid input.
+!! direction 3 of wedges, with order \(\ge 1\).
+!!
+!! `family` [[SHP_SERENDIPITY]] selects the serendipity quadrilaterals and
+!! hexahedra of orders 1 to 3 (4, 8, 12 and 8, 20, 32 nodes), which must be
+!! finite.
+!!
+!! `nodes` is a permutation of `1:nnodes`: the caller's node `k` is node
+!! `nodes(k)` of the default numbering. All outputs then follow the
+!! caller's numbering.
+!!
+!! Stops on invalid input.
 
   class(shapefunc), intent(inout) :: self
   type(cubature), intent(in) :: q            !! Cubature on the reference element
   integer, intent(in) :: order               !! Polynomial order
-  integer, intent(in), optional :: infin(:)  !! Infinitude, `SHP_*`, size 1 or `q%dim`
+  integer, intent(in), optional :: infin(:)  !! Infinitude, `SHP_FIN`, `SHP_INF` or `SHP_CHP`, size 1 or `q%dim`
+  integer, intent(in), optional :: family    !! `SHP_LAGRANGE` (default) or `SHP_SERENDIPITY`
+  integer, intent(in), optional :: nodes(:)  !! Node ordering: `nodes(k)` is the default number of node `k`
 
-  integer :: g, k, p
+  integer :: g, k, p, n
 
   if (.not. q%is_valid()) error stop "shapefunc%set: cubature is not set"
   if (order < 0) error stop "shapefunc%set: order must be non-negative"
@@ -245,14 +290,14 @@ pure subroutine set(self, q, order, infin)
   select case (self%elm)
   case (CUB_LIN, CUB_QUA, CUB_HEX)
     self%nfactors = self%dim
-    self%family(1:self%dim) = self%infin(1:self%dim)
+    self%kinds(1:self%dim) = self%infin(1:self%dim)
     do k = 1, self%dim
       self%dsdxi(k,k) = 1
     end do
   case (CUB_TRI, CUB_TET)
     if (any(self%infin /= SHP_FIN)) error stop "shapefunc%set: simplices must be finite"
     self%nfactors = self%dim + 1
-    self%family = SIMPLEX
+    self%kinds = SIMPLEX
     do k = 1, self%dim
       self%dsdxi(k,k) = 1
     end do
@@ -262,8 +307,8 @@ pure subroutine set(self, q, order, infin)
     if (any(self%infin(1:2) /= SHP_FIN)) &
       error stop "shapefunc%set: wedges may be infinite only along direction 3"
     self%nfactors = 4
-    self%family(1:3) = SIMPLEX
-    self%family(4)   = self%infin(3)
+    self%kinds(1:3) = SIMPLEX
+    self%kinds(4)   = self%infin(3)
     self%dsdxi(1,1) = 1
     self%dsdxi(2,2) = 1
     self%dsdxi(3,1:2) = -1
@@ -271,38 +316,63 @@ pure subroutine set(self, q, order, infin)
     self%s0(3) = 1
   end select
 
-  if (any(self%family == SIMPLEX) .and. p < 1) &
+  if (any(self%kinds == SIMPLEX) .and. p < 1) &
     error stop "shapefunc%set: simplex and wedge orders must be >= 1"
 
-  ! Node numbering and coordinates
+  if (present(family)) self%family = family
+  select case (self%family)
+  case (SHP_LAGRANGE)
+  case (SHP_SERENDIPITY)
+    if (self%elm /= CUB_QUA .and. self%elm /= CUB_HEX) &
+      error stop "shapefunc%set: serendipity elements are quadrilaterals and hexahedra"
+    if (p < 1 .or. p > 3) error stop "shapefunc%set: serendipity order must be 1, 2 or 3"
+    if (any(self%infin /= SHP_FIN)) error stop "shapefunc%set: serendipity elements must be finite"
+  case default
+    error stop "shapefunc%set: family must be SHP_LAGRANGE or SHP_SERENDIPITY"
+  end select
+
+  ! Default node numbering of the product functions
   select case (self%elm)
   case (CUB_LIN)
-    self%lattice = line_lattice(p)
+    self%basis = line_lattice(p)
   case (CUB_QUA)
-    self%lattice = quad_lattice(p)
+    self%basis = quad_lattice(p)
   case (CUB_HEX)
-    self%lattice = hex_lattice(p)
+    self%basis = hex_lattice(p)
   case (CUB_TRI)
-    self%lattice = tri_lattice(p)
+    self%basis = tri_lattice(p)
   case (CUB_TET)
-    self%lattice = tet_lattice(p)
+    self%basis = tet_lattice(p)
   case (CUB_WED)
-    self%lattice = wedge_lattice(p)
+    self%basis = wedge_lattice(p)
   end select
+
+  ! Serendipity nodes are the vertices and edges, which come first
+  if (self%family == SHP_SERENDIPITY) then
+    n = count(count(self%basis > 0 .and. self%basis < p, dim=1) <= 1)
+    self%lattice = self%basis(:,1:n)
+    self%trans = serendipity(p, lattice_coords(self, self%basis))
+  else
+    self%lattice = self%basis
+  end if
   self%nnodes = size(self%lattice, 2)
 
-  allocate(self%coords(self%dim, self%nnodes))
-  select case (self%elm)
-  case (CUB_LIN, CUB_QUA, CUB_HEX)
-    do k = 1, self%dim
-      self%coords(k,:) = node_coordinate(self%family(k), p, self%lattice(k,:))
+  ! Caller's node ordering
+  if (present(nodes)) then
+    if (size(nodes) /= self%nnodes) error stop "shapefunc%set: size(nodes) must be the number of nodes"
+    if (any(nodes < 1 .or. nodes > self%nnodes)) error stop "shapefunc%set: nodes must be a permutation"
+    do k = 1, self%nnodes
+      if (count(nodes == k) /= 1) error stop "shapefunc%set: nodes must be a permutation"
     end do
-  case (CUB_TRI, CUB_TET)
-    self%coords = real(self%lattice(1:self%dim,:), rk)/p
-  case (CUB_WED)
-    self%coords(1:2,:) = real(self%lattice(1:2,:), rk)/p
-    self%coords(3,:)   = node_coordinate(self%family(4), p, self%lattice(4,:))
-  end select
+    self%lattice = self%lattice(:,nodes)
+    if (allocated(self%trans)) then
+      self%trans = self%trans(nodes,:)
+    else
+      self%basis = self%basis(:,nodes)
+    end if
+  end if
+
+  self%coords = lattice_coords(self, self%lattice)
 
   ! Values and derivatives at the cubature points
   self%npoints = q%npoints
@@ -328,6 +398,38 @@ pure subroutine eval(self, xi, func, derv, curv)
   real(rk), intent(out) :: derv(self%dim, self%nnodes)                !! \(\partial N_i/\partial\xi_j\)
   real(rk), intent(out) :: curv(self%dim, self%dim, self%nnodes)      !! \(\partial^2 N_i/\partial\xi_j\partial\xi_k\)
 
+  real(rk) :: fb(size(self%basis, 2))                                 ! Product functions
+  real(rk) :: db(self%dim, size(self%basis, 2))
+  real(rk) :: cb(self%dim, self%dim, size(self%basis, 2))
+  integer :: k
+
+  if (.not. allocated(self%trans)) then
+    call eval_products(self, xi, func, derv, curv)
+    return
+  end if
+
+  ! Serendipity: fixed combinations of the product functions
+  call eval_products(self, xi, fb, db, cb)
+  func = matmul(self%trans, fb)
+  derv = matmul(db, transpose(self%trans))
+  do k = 1, self%dim
+    curv(:,k,:) = matmul(cb(:,k,:), transpose(self%trans))
+  end do
+
+end subroutine eval
+
+!***********************************************************************
+
+pure subroutine eval_products(self, xi, func, derv, curv)
+!! Evaluate the product functions of the lattice `basis` and their
+!! derivatives at `xi`
+
+  class(shapefunc), intent(in) :: self
+  real(rk), intent(in) :: xi(:)                                       !! Point, size `dim`
+  real(rk), intent(out) :: func(:)                                    !! Values
+  real(rk), intent(out) :: derv(:,:)                                  !! First derivatives
+  real(rk), intent(out) :: curv(:,:,:)                                !! Second derivatives
+
   integer :: i, k, l, n
   real(rk) :: s(4)                                                    ! Factor coordinates
   real(rk), dimension(0:self%order, 4) :: f, d, c                     ! 1D values and derivatives per factor
@@ -340,14 +442,14 @@ pure subroutine eval(self, xi, func, derv, curv)
   s = self%s0 + matmul(jac, xi(1:self%dim))
 
   do k = 1, n
-    call basis(self%family(k), self%order, s(k), f(:,k), d(:,k), c(:,k))
+    call basis(self%kinds(k), self%order, s(k), f(:,k), d(:,k), c(:,k))
   end do
 
-  do i = 1, self%nnodes
+  do i = 1, size(self%basis, 2)
     do k = 1, n
-      fi(k) = f(self%lattice(k,i), k)
-      di(k) = d(self%lattice(k,i), k)
-      ci(k) = c(self%lattice(k,i), k)
+      fi(k) = f(self%basis(k,i), k)
+      di(k) = d(self%basis(k,i), k)
+      ci(k) = c(self%basis(k,i), k)
     end do
 
     ! N = prod f_k; product rule for the s-derivatives
@@ -367,7 +469,7 @@ pure subroutine eval(self, xi, func, derv, curv)
     curv(:,:,i) = (curv(:,:,i) + transpose(curv(:,:,i)))/2
   end do
 
-end subroutine eval
+end subroutine eval_products
 
 !***********************************************************************
 
@@ -424,6 +526,7 @@ subroutine summary(self, unit)
   write(u,"(A,A)")              "Element:    ", names(self%elm)
   write(u,"(A,I0)")             "Dimension:  ", self%dim
   write(u,"(A,I0)")             "Order:      ", self%order
+  write(u,"(A,A)")              "Family:     ", trim(familynames(self%family))
   write(u,"(A,*(A,:,', '))")    "Infinitude: ", infnames(self%infin(1:self%dim))
   write(u,"(A,I0)")             "Nodes:      ", self%nnodes
   write(u,"(A,I0)")             "Points:     ", self%npoints
@@ -490,11 +593,12 @@ pure subroutine destroy(self)
   self%elm      = 0
   self%dim      = 0
   self%order    = 0
+  self%family   = SHP_LAGRANGE
   self%nnodes   = 0
   self%npoints  = 0
   self%infin    = SHP_FIN
   self%nfactors = 0
-  self%family   = 0
+  self%kinds    = 0
   self%s0       = 0
   self%dsdxi    = 0
   if (allocated(self%lattice)) deallocate(self%lattice)
@@ -502,6 +606,8 @@ pure subroutine destroy(self)
   if (allocated(self%func))    deallocate(self%func)
   if (allocated(self%derv))    deallocate(self%derv)
   if (allocated(self%curv))    deallocate(self%curv)
+  if (allocated(self%basis))   deallocate(self%basis)
+  if (allocated(self%trans))   deallocate(self%trans)
 
 end subroutine destroy
 
@@ -625,6 +731,122 @@ pure function node_coordinate(family, p, a) result(x)
   end if
 
 end function node_coordinate
+
+!***********************************************************************
+
+pure function lattice_coords(self, a) result(x)
+!! Reference coordinates of the lattice points `a`
+
+  class(shapefunc), intent(in) :: self
+  integer, intent(in) :: a(:,:)      !! Lattice indices, shape `[nfactors, n]`
+  real(rk) :: x(self%dim, size(a, 2))
+
+  integer :: k
+
+  select case (self%elm)
+  case (CUB_LIN, CUB_QUA, CUB_HEX)
+    do k = 1, self%dim
+      x(k,:) = node_coordinate(self%kinds(k), self%order, a(k,:))
+    end do
+  case (CUB_TRI, CUB_TET)
+    x = real(a(1:self%dim,:), rk)/self%order
+  case (CUB_WED)
+    x(1:2,:) = real(a(1:2,:), rk)/self%order
+    x(3,:)   = node_coordinate(self%kinds(4), self%order, a(4,:))
+  end select
+
+end function lattice_coords
+
+!***********************************************************************
+! Serendipity elements
+!***********************************************************************
+
+pure function serendipity(p, x) result(t)
+!! Serendipity functions of order `p` as combinations of the
+!! tensor-product Lagrange functions: \(N^S_i = \sum_j T_{ij} N^L_j\).
+!!
+!! With the serendipity monomials \(m_k\), \(V_{ki} = m_k(x_i)\) at the
+!! serendipity nodes and \(W_{kj} = m_k(x_j)\) at all tensor-product
+!! nodes, \(T = V^{-1} W\), because \(T_{ij} = N^S_i(x_j)\).
+
+  integer, intent(in) :: p             !! Order
+  real(rk), intent(in) :: x(:,:)       !! Tensor-product nodes, shape `[dim, n]`, serendipity nodes first
+  real(rk), allocatable :: t(:,:)
+
+  integer, allocatable :: e(:,:)
+  real(rk), allocatable :: v(:,:)
+  integer :: j, k, l, n
+
+  e = serendipity_exponents(p, size(x, 1))
+  n = size(e, 2)
+  allocate(t(n, size(x, 2)))
+  do j = 1, size(x, 2)
+    do k = 1, n
+      t(k,j) = 1
+      do l = 1, size(x, 1)
+        if (e(l,k) > 0) t(k,j) = t(k,j)*x(l,j)**e(l,k)
+      end do
+    end do
+  end do
+  v = t(:,1:n)
+  call solve(v, t)
+
+end function serendipity
+
+!***********************************************************************
+
+pure function serendipity_exponents(p, d) result(e)
+!! Exponents of the monomials spanning the serendipity space of order `p`
+!! in `d` dimensions: superlinear degree (the degree counting only the
+!! variables of exponent \(\ge 2\)) at most `p` [7]
+
+  integer, intent(in) :: p, d
+  integer, allocatable :: e(:,:)       !! Exponents, shape `[d, n]`
+
+  integer :: a(d), i, l, n
+
+  allocate(e(d, (p + 1)**d))
+  n = 0
+  do i = 0, (p + 1)**d - 1
+    a = [(mod(i/(p + 1)**(l - 1), p + 1), l = 1, d)]
+    if (sum(a, mask=a >= 2) <= p) then
+      n = n + 1
+      e(:,n) = a
+    end if
+  end do
+  e = e(:,1:n)
+
+end function serendipity_exponents
+
+!***********************************************************************
+
+pure subroutine solve(a, b)
+!! Solve \(A X = B\) in place (`b` becomes \(X\)) by Gaussian elimination
+!! with partial pivoting
+
+  real(rk), intent(inout) :: a(:,:)    !! Square matrix, destroyed
+  real(rk), intent(inout) :: b(:,:)    !! Right-hand sides, overwritten by the solution
+
+  integer :: i, k, m
+  real(rk) :: f
+
+  do k = 1, size(a, 1)
+    m = k - 1 + maxloc(abs(a(k:,k)), 1)
+    if (m /= k) then
+      a([k, m],:) = a([m, k],:)
+      b([k, m],:) = b([m, k],:)
+    end if
+    do i = k + 1, size(a, 1)
+      f = a(i,k)/a(k,k)
+      a(i,k:) = a(i,k:) - f*a(k,k:)
+      b(i,:)  = b(i,:)  - f*b(k,:)
+    end do
+  end do
+  do k = size(a, 1), 1, -1
+    b(k,:) = (b(k,:) - matmul(a(k,k+1:), b(k+1:,:)))/a(k,k)
+  end do
+
+end subroutine solve
 
 !***********************************************************************
 ! Node numbering

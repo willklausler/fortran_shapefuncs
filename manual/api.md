@@ -3,7 +3,7 @@ title: API reference
 ---
 
 ```fortran
-use shapefuncs, only: shapefunc, SHP_FIN, SHP_INF, SHP_CHP
+use shapefuncs, only: shapefunc, SHP_FIN, SHP_INF, SHP_CHP, SHP_LAGRANGE, SHP_SERENDIPITY
 use cubatures,  only: cubature, rk, CUB_LIN, CUB_TRI, CUB_QUA, CUB_TET, CUB_HEX, CUB_WED
 ```
 
@@ -17,6 +17,8 @@ The element constants `CUB_*`, the real kind `rk` (`real64`) and the type
 | `SHP_FIN` | Finite direction: Lagrange polynomials on \([-1,1]\) |
 | `SHP_INF` | Infinite direction: mapping functions, for coordinates |
 | `SHP_CHP` | Infinite direction: chopped functions, for the solution |
+| `SHP_LAGRANGE` | Family: full Lagrange elements (default) |
+| `SHP_SERENDIPITY` | Family: serendipity quadrilaterals and hexahedra, orders 1–3 |
 
 ## Type `shapefunc`
 
@@ -27,6 +29,7 @@ The element constants `CUB_*`, the real kind `rk` (`real64`) and the type
 | `elm` | `integer` | Element type, one of `CUB_*`; 0 when unset |
 | `dim` | `integer` | Spatial dimension |
 | `order` | `integer` | Polynomial order \(p\) |
+| `family` | `integer` | `SHP_LAGRANGE` or `SHP_SERENDIPITY` |
 | `nnodes` | `integer` | Number of nodes |
 | `npoints` | `integer` | Number of cubature points |
 | `infin(3)` | `integer` | Infinitude per direction, `SHP_*`; unused entries are `SHP_FIN` |
@@ -41,12 +44,12 @@ Treat the components as read-only: `set` fills them consistently.
 ### Constructor
 
 ```fortran
-s = shapefunc(q, order [, infin])
+s = shapefunc(q, order [, infin] [, family] [, nodes])
 ```
 
 Same arguments as `set`.
 
-### `call s%set(q, order [, infin])`
+### `call s%set(q, order [, infin] [, family] [, nodes])`
 
 Build the shape functions in place, discarding any previous contents.
 
@@ -54,7 +57,13 @@ Build the shape functions in place, discarding any previous contents.
 | --- | --- | --- |
 | `q` | `type(cubature)`, in | Cubature whose points are used; its element type sets the element |
 | `order` | `integer`, in | Polynomial order |
-| `infin(:)` | `integer`, in, optional | `SHP_*` per direction, size 1 (all directions) or `q%dim`; default `SHP_FIN` |
+| `infin(:)` | `integer`, in, optional | `SHP_FIN`, `SHP_INF` or `SHP_CHP` per direction, size 1 (all directions) or `q%dim`; default `SHP_FIN` |
+| `family` | `integer`, in, optional | `SHP_LAGRANGE` (default) or `SHP_SERENDIPITY` |
+| `nodes(:)` | `integer`, in, optional | Node ordering: the caller's node `k` is node `nodes(k)` of the default numbering. A permutation of `1:nnodes` |
+
+With `nodes`, every output (`lattice`, `coords`, `func`, `derv`, `curv` and
+`eval`) follows the caller's numbering. See
+[Node ordering](elements.html#caller-defined-node-ordering).
 
 `set` stops with `error stop` and a message when
 
@@ -63,7 +72,11 @@ Build the shape functions in place, discarding any previous contents.
   infinite direction;
 - `infin` has the wrong size or a value other than `SHP_*`;
 - a triangle or tetrahedron has an infinite direction, or a wedge has one
-  other than direction 3.
+  other than direction 3;
+- `family` is not `SHP_LAGRANGE` or `SHP_SERENDIPITY`, or a serendipity
+  element is not a quadrilateral or hexahedron of order 1 to 3 with finite
+  directions;
+- `nodes` does not have `nnodes` entries or is not a permutation.
 
 ### `call s%eval(xi, func, derv, curv)`
 
@@ -78,8 +91,8 @@ The object must be set. Infinite directions are singular at \(\xi = 1\).
 
 ### `call s%summary([unit])`
 
-Write the element type, dimension, order, infinitude and the numbers of nodes
-and points. `unit` defaults to `output_unit`.
+Write the element type, dimension, order, family, infinitude and the numbers
+of nodes and points. `unit` defaults to `output_unit`.
 
 ### `call s%show([unit])`
 

@@ -13,7 +13,9 @@ the points of a cubature (numerical integration rule) from
 [fortran_cubatures](https://github.com/willklausler/fortran_cubatures).
 
 It supports lines, triangles, quadrilaterals, tetrahedra, hexahedra and wedges
-of any polynomial order. Lines, quadrilaterals, hexahedra and the axial
+of any polynomial order, and serendipity quadrilaterals and hexahedra (8, 12,
+20 and 32 nodes). Nodes follow the classical numbering or any numbering given
+at run time. Lines, quadrilaterals, hexahedra and the axial
 direction of wedges can also be *infinite*: they extend to infinity and use the
 mapped infinite elements of Zienkiewicz, Emson and Bettess.
 

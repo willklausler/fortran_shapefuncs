@@ -7,10 +7,11 @@ program shapefuncs_example
 !! 3. integrate a decaying field over an unbounded domain with a mapped
 !!    infinite element,
 !! 4. keep one set of shape functions per element type in a table indexed
-!!    by `CUB_*`.
+!!    by `CUB_*`,
+!! 5. use a 20-node serendipity hexahedron in a mesh file's node ordering.
 
-  use cubatures, only: cubature, rk, CUB_LIN, CUB_QUA, CUB_TET, CUB_WED
-  use shapefuncs, only: shapefunc, SHP_INF, SHP_CHP
+  use cubatures, only: cubature, rk, CUB_LIN, CUB_QUA, CUB_TET, CUB_HEX, CUB_WED
+  use shapefuncs, only: shapefunc, SHP_INF, SHP_CHP, SHP_SERENDIPITY
 
   implicit none
 
@@ -18,6 +19,7 @@ program shapefuncs_example
   call curved_area()
   call infinite_element()
   call function_table()
+  call mesh_ordering()
 
 contains
 
@@ -129,6 +131,42 @@ subroutine function_table()
   write(*,"(A,6I4)") "Points per element:", table%npoints
 
 end subroutine function_table
+
+!***********************************************************************
+
+subroutine mesh_ordering()
+!! A mesh format that lists the edge nodes of the 20-node hexahedron by
+!! their first vertex, as Gmsh does. The permutation for `nodes` follows
+!! from matching the reference coordinates of the mesh format's nodes.
+
+  integer, parameter :: edges(2,12) = reshape([1,2, 1,4, 1,5, 2,3, 2,6, 3,4, &
+                                               3,7, 4,8, 5,6, 5,8, 6,7, 7,8], [2, 12])
+  type(cubature) :: q
+  type(shapefunc) :: s
+  real(rk) :: xmesh(3,20)
+  integer :: perm(20), k
+
+  write(*,"(/,A)") "5. 20-node hexahedron in a mesh file's node ordering"
+
+  q = cubature(CUB_HEX, 4)
+  s = shapefunc(q, 2, family=SHP_SERENDIPITY)
+
+  ! Mesh format: the same vertices, then the midpoints of its edge list
+  xmesh(:,1:8) = s%coords(:,1:8)
+  do k = 1, 12
+    xmesh(:,8+k) = (s%coords(:,edges(1,k)) + s%coords(:,edges(2,k)))/2
+  end do
+
+  ! Mesh node k is the node of s at the same reference coordinates
+  do k = 1, 20
+    perm(k) = minloc(sum(abs(s%coords - spread(xmesh(:,k), 2, 20)), dim=1), 1)
+  end do
+  write(*,"(A,20I3)") "nodes =", perm
+
+  s = shapefunc(q, 2, family=SHP_SERENDIPITY, nodes=perm)
+  write(*,"(A,L2)") "Coordinates follow the mesh ordering:", all(abs(s%coords - xmesh) < 1.0e-12_rk)
+
+end subroutine mesh_ordering
 
 !***********************************************************************
 

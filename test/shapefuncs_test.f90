@@ -13,9 +13,11 @@ program shapefuncs_test
 !! - sum to 1 (finite and mapping functions) or vanish at infinity
 !!   (chopped functions).
 !!
+!! The same checks run on the serendipity quadrilaterals and hexahedra.
 !! Also checks the classical node numbering of orders 1 to 3, closed forms
-!! from the literature, integration with a cubature, the constructor and
-!! `set` interfaces, reuse, `destroy`, and output.
+!! from the literature, integration with a cubature, caller-defined node
+!! ordering, the constructor and `set` interfaces, reuse, `destroy`, and
+!! output.
 
   use cubatures, only: cubature, rk, CUB_LIN, CUB_TRI, CUB_QUA, CUB_TET, CUB_HEX, CUB_WED
   use shapefuncs
@@ -75,6 +77,12 @@ program shapefuncs_test
     end do
   end do
 
+  call section("Serendipity")
+  do p = 1, 3
+    call check_element(CUB_QUA, p, [SHP_FIN], SHP_SERENDIPITY)
+    call check_element(CUB_HEX, p, [SHP_FIN], SHP_SERENDIPITY)
+  end do
+
   call section("Node counts")
   call expect(nodes(CUB_LIN, 4) == 5,    "LIN 4")
   call expect(nodes(CUB_QUA, 4) == 25,   "QUA 4")
@@ -83,12 +91,19 @@ program shapefuncs_test
   call expect(nodes(CUB_TET, 4) == 35,   "TET 4")
   call expect(nodes(CUB_WED, 3) == 40,   "WED 3")
   call expect(nodes(CUB_WED, 4) == 75,   "WED 4")
+  call expect(nodes(CUB_QUA, 2, SHP_SERENDIPITY) == 8,  "QUA 2 serendipity")
+  call expect(nodes(CUB_QUA, 3, SHP_SERENDIPITY) == 12, "QUA 3 serendipity")
+  call expect(nodes(CUB_HEX, 2, SHP_SERENDIPITY) == 20, "HEX 2 serendipity")
+  call expect(nodes(CUB_HEX, 3, SHP_SERENDIPITY) == 32, "HEX 3 serendipity")
 
   call section("Classical numbering")
   call test_numbering()
 
   call section("Closed forms")
   call test_closed_forms()
+
+  call section("Node ordering")
+  call test_ordering()
 
   call section("Integration")
   call test_integration()
@@ -137,19 +152,24 @@ end function close
 
 !***********************************************************************
 
-integer function nodes(elm, order)
+integer function nodes(elm, order, family)
 !! Number of nodes of an element
   integer, intent(in) :: elm, order
+  integer, intent(in), optional :: family
   type(shapefunc) :: s
-  s = shapefunc(cubature(elm, 1), order)
+  s = shapefunc(cubature(elm, 1), order, family=family)
   nodes = s%nnodes
 end function nodes
 
 !***********************************************************************
 
-integer function expected_nodes(elm, p)
+integer function expected_nodes(elm, p, family)
 !! Closed-form number of nodes
-  integer, intent(in) :: elm, p
+  integer, intent(in) :: elm, p, family
+  if (family == SHP_SERENDIPITY) then
+    expected_nodes = merge(4*p, 8 + 12*(p - 1), elm == CUB_QUA)
+    return
+  end if
   select case (elm)
   case (CUB_LIN); expected_nodes = p + 1
   case (CUB_QUA); expected_nodes = (p + 1)**2
@@ -163,23 +183,24 @@ end function expected_nodes
 
 !***********************************************************************
 
-subroutine check_element(elm, p, infin)
-!! Run every per-element check on one element, order and infinitude
+subroutine check_element(elm, p, infin, family)
+!! Run every per-element check on one element, order, infinitude and family
 
   integer, intent(in) :: elm, p, infin(:)
+  integer, intent(in), optional :: family
 
   type(cubature) :: q
   type(shapefunc) :: s
   character(40) :: label
 
-  write(label,"(I0,' p=',I0,' inf=',*(I0,:,','))") elm, p, infin
-
   ! Degree 2p integrates the mass matrix of affine elements
   q = cubature(elm, 2*p)
-  s = shapefunc(q, p, infin)
+  s = shapefunc(q, p, infin, family)
+
+  write(label,"(I0,' p=',I0,' fam=',I0,' inf=',*(I0,:,','))") elm, p, s%family, infin
 
   call expect(s%is_valid(), trim(label)//" is_valid")
-  call expect(s%nnodes == expected_nodes(elm, p), trim(label)//" node count")
+  call expect(s%nnodes == expected_nodes(elm, p, s%family), trim(label)//" node count")
   call expect(s%npoints == q%npoints, trim(label)//" point count")
   call check_kronecker(s, label)
   call check_reproduction(s, q, label)
@@ -221,7 +242,8 @@ subroutine check_reproduction(s, q, label)
 !! monomials \(\xi^e\) along finite directions, \(\xi^e/(1-\xi)\) along
 !! mapped infinite directions and \((1-\xi)\xi^e\) along chopped
 !! directions, with \(e \le p\) per direction and total degree \(\le p\)
-!! over the simplex directions.
+!! over the simplex directions. Serendipity elements span the monomials of
+!! superlinear degree \(\le p\).
 
   type(shapefunc), intent(in) :: s
   type(cubature), intent(in) :: q
@@ -244,6 +266,9 @@ subroutine check_reproduction(s, q, label)
         e = [i, j, k]
         if (ntri > 0) then
           if (sum(e(1:ntri)) > p) cycle
+        end if
+        if (s%family == SHP_SERENDIPITY) then
+          if (sum(e, mask=e >= 2) > p) cycle
         end if
         do g = 1, s%npoints
           ! Interpolant
@@ -441,6 +466,12 @@ subroutine test_numbering()
                            17, 25, 18, 23, 27, 24, 20, 26, 19, &
                             5, 13,  6, 16, 22, 14,  8, 15,  7])
 
+  ! Serendipity nodes are the vertex and edge nodes of the Lagrange element
+  call serendipity_nodes(CUB_QUA, 2)
+  call serendipity_nodes(CUB_QUA, 3)
+  call serendipity_nodes(CUB_HEX, 2)
+  call serendipity_nodes(CUB_HEX, 3)
+
   ! Lattice indices of each node
   call lattice(CUB_TRI, 1, [1,0,0, 0,1,0, 0,0,1])
   call lattice(CUB_TRI, 2, [2,0,0, 0,2,0, 0,0,2, 1,1,0, 0,1,1, 1,0,1])
@@ -477,6 +508,21 @@ subroutine tensor(elm, p, seq)
   write(label,"(I0,' p=',I0)") elm, p
   call expect(ok, trim(label)//" numbering")
 end subroutine tensor
+
+!***********************************************************************
+
+subroutine serendipity_nodes(elm, p)
+!! Serendipity nodes are the leading Lagrange nodes, on vertices and edges
+  integer, intent(in) :: elm, p
+  type(shapefunc) :: s, l
+  character(20) :: label
+  s = shapefunc(cubature(elm, 1), p, family=SHP_SERENDIPITY)
+  l = shapefunc(cubature(elm, 1), p)
+  write(label,"(I0,' p=',I0)") elm, p
+  call expect(all(s%lattice == l%lattice(:,1:s%nnodes)) &
+              .and. all(count(s%lattice > 0 .and. s%lattice < p, dim=1) <= 1), &
+              trim(label)//" serendipity numbering")
+end subroutine serendipity_nodes
 
 !***********************************************************************
 
@@ -526,6 +572,19 @@ subroutine test_closed_forms()
   call expect(close(d(1,:),   [x - 0.5_rk, x + 0.5_rk, -2*x], tol),      "LIN 2 first derivatives")
   call expect(close(c(1,1,:), [1.0_rk, 1.0_rk, -2.0_rk], tol),           "LIN 2 second derivatives")
 
+  ! 8-node serendipity quadrilateral: corner 1 and midside 5
+  xi(1:2) = [0.3_rk, -0.6_rk]
+  s = shapefunc(cubature(CUB_QUA, 1), 2, family=SHP_SERENDIPITY)
+  call evaluate(s, xi(1:2), f, d, c)
+  associate (x => xi(1), y => xi(2))
+    call expect(close(f([1, 5]), [(1 - x)*(1 - y)*(-x - y - 1)/4, (1 - x**2)*(1 - y)/2], tol), &
+                "QUA 8 values")
+    call expect(close(d(:,1), [(1 - y)*(2*x + y)/4, (1 - x)*(x + 2*y)/4], tol), &
+                "QUA 8 first derivatives")
+    call expect(close(reshape(c(:,:,5), [4]), [-(1 - y), x, x, 0.0_rk], tol), &
+                "QUA 8 second derivatives")
+  end associate
+
   ! Linear tetrahedron: barycentric coordinates
   xi = [0.1_rk, 0.2_rk, 0.3_rk]
   s = shapefunc(cubature(CUB_TET, 1), 1)
@@ -547,6 +606,53 @@ subroutine evaluate(s, x, f, d, c)
   allocate(f(s%nnodes), d(s%dim,s%nnodes), c(s%dim,s%dim,s%nnodes))
   call s%eval(x, f, d, c)
 end subroutine evaluate
+
+!***********************************************************************
+
+subroutine test_ordering()
+!! A caller-defined numbering permutes every output consistently
+
+  call check_ordering(CUB_QUA, 2, SHP_LAGRANGE, [SHP_FIN, SHP_INF])
+  call check_ordering(CUB_HEX, 2, SHP_SERENDIPITY, [SHP_FIN])
+  call check_ordering(CUB_TET, 2, SHP_LAGRANGE, [SHP_FIN])
+  call check_ordering(CUB_WED, 3, SHP_LAGRANGE, [SHP_FIN, SHP_FIN, SHP_CHP])
+
+end subroutine test_ordering
+
+!***********************************************************************
+
+subroutine check_ordering(elm, p, family, infin)
+!! Compare a reversed and an identity numbering with the default one
+
+  integer, intent(in) :: elm, p, family, infin(:)
+
+  type(cubature) :: q
+  type(shapefunc) :: s, r, id
+  integer :: k
+  integer, allocatable :: perm(:)
+  real(rk), allocatable :: f(:), d(:,:), c(:,:,:), fr(:), dr(:,:), cr(:,:,:)
+  character(20) :: label
+
+  write(label,"(I0,' p=',I0,' fam=',I0)") elm, p, family
+  q = cubature(elm, 2*p)
+  s = shapefunc(q, p, infin, family)
+  perm = [(s%nnodes + 1 - k, k = 1, s%nnodes)]
+  r = shapefunc(q, p, infin, family, nodes=perm)
+  id = shapefunc(q, p, infin, family, nodes=[(k, k = 1, s%nnodes)])
+
+  call expect(r%is_valid() .and. r%nnodes == s%nnodes, trim(label)//" reordered is_valid")
+  call expect(all(r%lattice == s%lattice(:,perm)) .and. all(r%coords == s%coords(:,perm)), &
+              trim(label)//" reordered lattice and coordinates")
+  call expect(all(abs(r%func - s%func(perm,:)) <= tol) &
+              .and. all(abs(r%derv - s%derv(:,perm,:)) <= tol*max(1.0_rk, maxval(abs(s%derv)))) &
+              .and. all(abs(r%curv - s%curv(:,:,perm,:)) <= tol*max(1.0_rk, maxval(abs(s%curv)))), &
+              trim(label)//" reordered values and derivatives")
+  call evaluate(s, q%abscissae(:,1), f, d, c)
+  call evaluate(r, q%abscissae(:,1), fr, dr, cr)
+  call expect(all(abs(fr - f(perm)) <= tol), trim(label)//" reordered eval")
+  call expect(all(id%func == s%func) .and. all(id%lattice == s%lattice), trim(label)//" identity ordering")
+
+end subroutine check_ordering
 
 !***********************************************************************
 
@@ -634,7 +740,7 @@ subroutine test_output()
   end do
   close(u)
   ! Unset summary, summary, show, numbering
-  call expect(n == 1 + 6 + (6 + 1 + s%npoints*(s%nnodes + 1)) + (6 + 1 + s%nnodes), &
+  call expect(n == 1 + 7 + (7 + 1 + s%npoints*(s%nnodes + 1)) + (7 + 1 + s%nnodes), &
               "output line count")
 
 end subroutine test_output
