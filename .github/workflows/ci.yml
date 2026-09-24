@@ -1,0 +1,55 @@
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    name: ${{ matrix.os }} / ${{ matrix.compiler }} ${{ matrix.version }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-24.04,  compiler: gcc,        version: 13 }
+          - { os: ubuntu-24.04,  compiler: gcc,        version: 14 }
+          - { os: ubuntu-24.04,  compiler: gcc,        version: 15 }
+          - { os: ubuntu-24.04,  compiler: intel,      version: '2025.2' }
+          - { os: ubuntu-24.04,  compiler: nvidia-hpc, version: '25.1' }
+          - { os: macos-15,      compiler: gcc,        version: 14 }
+          - { os: windows-2025,  compiler: gcc,        version: 14 }
+    steps:
+      - uses: actions/checkout@v7
+      - uses: fortran-lang/setup-fortran@v1   # sets FPM_FC
+        with:
+          compiler: ${{ matrix.compiler }}
+          version: ${{ matrix.version }}
+      - uses: fortran-lang/setup-fpm@v10
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          fpm-version: latest
+      - run: fpm test --profile debug
+      - run: fpm test --profile release
+      - run: fpm run --example --all --profile release
+
+  make:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: fortran-lang/setup-fortran@v1   # sets FC
+        with:
+          compiler: gcc
+          version: 14
+      - run: make test
+      - run: make example
+      - run: make install DESTDIR=$PWD/stage PREFIX=/usr
+      - run: gfortran example/shapefuncs_example.f90 -Istage/usr/include -Lstage/usr/lib -lfortran_shapefuncs -o example && ./example
+
+  docs:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.x'
+      - run: pip install ford
+      - run: ford ford.md

@@ -1,32 +1,24 @@
 ---
 src_dir: src
-         app
          example
          test
-output_dir: docs/fpm-ford
-project: easy
-summary: easy project
+output_dir: docs
+page_dir: manual
+project: fortran_shapefuncs
+summary: Finite element shape functions, including mapped infinite elements, in modern Fortran
 project_github: https://github.com/willklausler/fortran_shapefuncs
-project_download:
 author: Will Klausler
-email: 226649647+willklausler@users.noreply.github.com
-github: https://github.com/willklausler/fortran_shapefuncs
-media_dir: docs/images
-exclude_dir: archive
-             FODDER
+github: https://github.com/willklausler
+license: mit
 display: public
          protected
 source: true
 proc_internals: true
-preprocess: False
+preprocess: false
 sort: permission-alpha
-favicon: docs/images/favicon.ico
-print_creation_date: true
-extra_mods: iso_fortran_env:https://gcc.gnu.org/onlinedocs/gfortran/ISO_005fFORTRAN_005fENV.html
-            tomlf:https://toml-f.github.io/toml-f
-creation_date: %Y-%m-%d %H:%M %z
 md_extensions: markdown.extensions.toc
                markdown.extensions.smarty
+               markdown.extensions.tables
 ---
 
 {!README.md!}
