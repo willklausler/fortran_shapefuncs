@@ -1,4 +1,4 @@
-program shapefuncs_test
+program test_shapefuncs
 !! Unit tests for [[shapefuncs]].
 !!
 !! For every element type, a sweep of orders and every combination of
@@ -747,4 +747,4 @@ end subroutine test_output
 
 !***********************************************************************
 
-end program shapefuncs_test
+end program test_shapefuncs
