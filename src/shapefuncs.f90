@@ -1,3 +1,4 @@
+! SPDX-License-Identifier: MIT
 module shapefuncs
 !! Lagrange shape functions and their first and second derivatives on the
 !! reference elements of the finite element method, including mapped
@@ -120,6 +121,14 @@ module shapefuncs
 !!   \(\sum_{k=1}^{p+1} \alpha_k/r^k\) [2, 4]. Use them to interpolate
 !!   the solution.
 !!
+!! ## Conventions
+!!
+!! Values and derivatives are `real64`; kinds are not exported, so take
+!! `real64` from `iso_fortran_env`. Invalid arguments to the constructor or
+!! `set` stop with `error stop` and a message that starts with
+!! `shapefunc%set:`. Everything is pure except the output procedures
+!! `summary`, `show` and `numbering`.
+!!
 !! ## References
 !!
 !! 1. Bettess, P. (1977). Infinite elements. *International Journal for
@@ -141,15 +150,18 @@ module shapefuncs
 !!    elements. *Foundations of Computational Mathematics*, 11(3), 337–344.
 !!    doi:10.1007/s10208-011-9087-3
 
-  use iso_fortran_env, only: output_unit
-  use cubatures, only: cubature, rk, CUB_LIN, CUB_TRI, CUB_QUA, CUB_TET, CUB_HEX, CUB_WED
+  use, intrinsic :: iso_fortran_env, only: rk => real64, output_unit
+  use cubatures, only: cubature, CUB_LIN, CUB_TRI, CUB_QUA, CUB_TET, CUB_HEX, CUB_WED
 
   implicit none
 
   private
 
+  ! Type and constructor
   public :: shapefunc
+  ! Infinitude per direction
   public :: SHP_FIN, SHP_INF, SHP_CHP
+  ! Element families
   public :: SHP_LAGRANGE, SHP_SERENDIPITY
 
   integer, parameter :: SHP_FIN = 1 !! Finite direction: Lagrange polynomials on \([-1,1]\)
@@ -188,24 +200,25 @@ module shapefuncs
     real(rk), allocatable :: coords(:,:)        !! Nodal coordinates, shape `[dim, nnodes]`
     real(rk), allocatable :: func(:,:)          !! Values \(N_i\), shape `[nnodes, npoints]`
     real(rk), allocatable :: derv(:,:,:)        !! First derivatives \(\partial N_i/\partial\xi_j\), shape `[dim, nnodes, npoints]`
-    real(rk), allocatable :: curv(:,:,:,:)      !! Second derivatives \(\partial^2 N_i/\partial\xi_j\partial\xi_k\), shape `[dim, dim, nnodes, npoints]`
+    real(rk), allocatable :: curv(:,:,:,:)      !! Second derivatives \(\partial^2 N_i/\partial\xi_j\partial\xi_k\),
+                                                !! shape `[dim, dim, nnodes, npoints]`
 
     integer, private :: nfactors = 0            ! Number of factor coordinates
     integer, private :: kinds(4) = 0            ! 1D function family per factor, `SHP_*` or `SIMPLEX`
     real(rk), private :: s0(4) = 0              ! Factor coordinates at \(\xi = 0\)
     real(rk), private :: dsdxi(4,3) = 0         ! Constant \(\partial s_k/\partial\xi_j\)
     integer, allocatable, private :: basis(:,:) ! Lattice of the product functions evaluated by `eval`
-    real(rk), allocatable, private :: trans(:,:)! Serendipity functions from product functions, `[nnodes, size(basis,2)]`
+    real(rk), allocatable, private :: trans(:,:) ! Serendipity functions from product functions, `[nnodes, size(basis,2)]`
 
   contains
 
-    procedure :: set
-    procedure :: eval
-    procedure :: is_valid
-    procedure :: summary
-    procedure :: show
-    procedure :: numbering
-    procedure :: destroy
+    procedure :: set                          !! Build the shape functions in place
+    procedure :: eval                         !! Evaluate at any point of the reference element
+    procedure :: is_valid                     !! True if set and consistent
+    procedure :: summary                      !! Write element, order, family, infinitude, nodes, points
+    procedure :: show                         !! Write the summary, values and first derivatives
+    procedure :: numbering                    !! Write the summary and the nodal coordinates
+    procedure :: destroy                      !! Deallocate and reset
 
   end type shapefunc
 
@@ -218,7 +231,9 @@ module shapefuncs
 
 contains
 
-!***********************************************************************
+!-----------------------------------------------------------------------
+! Constructor and set
+!-----------------------------------------------------------------------
 
 pure function new_shapefunc(q, order, infin, family, nodes) result(self)
 !! Construct shape functions of order `order` at the points of `q`; see `set`
@@ -233,8 +248,6 @@ pure function new_shapefunc(q, order, infin, family, nodes) result(self)
   call self%set(q, order, infin, family, nodes)
 
 end function new_shapefunc
-
-!***********************************************************************
 
 pure subroutine set(self, q, order, infin, family, nodes)
 !! Build shape functions of order `order` at the points of `q`.
@@ -281,9 +294,9 @@ pure subroutine set(self, q, order, infin, family, nodes)
       error stop "shapefunc%set: size(infin) must be 1 or the dimension"
     end if
     if (any(self%infin < SHP_FIN .or. self%infin > SHP_CHP)) &
-      error stop "shapefunc%set: infin must be SHP_FIN, SHP_INF or SHP_CHP"
+      & error stop "shapefunc%set: infin must be SHP_FIN, SHP_INF or SHP_CHP"
     if (any(self%infin /= SHP_FIN) .and. p < 1) &
-      error stop "shapefunc%set: infinite directions need order >= 1"
+      & error stop "shapefunc%set: infinite directions need order >= 1"
   end if
 
   ! Factor coordinates s = s0 + dsdxi xi, and the 1D family of each
@@ -305,7 +318,7 @@ pure subroutine set(self, q, order, infin, family, nodes)
     self%s0(self%dim+1) = 1
   case (CUB_WED)
     if (any(self%infin(1:2) /= SHP_FIN)) &
-      error stop "shapefunc%set: wedges may be infinite only along direction 3"
+      & error stop "shapefunc%set: wedges may be infinite only along direction 3"
     self%nfactors = 4
     self%kinds(1:3) = SIMPLEX
     self%kinds(4)   = self%infin(3)
@@ -317,14 +330,14 @@ pure subroutine set(self, q, order, infin, family, nodes)
   end select
 
   if (any(self%kinds == SIMPLEX) .and. p < 1) &
-    error stop "shapefunc%set: simplex and wedge orders must be >= 1"
+    & error stop "shapefunc%set: simplex and wedge orders must be >= 1"
 
   if (present(family)) self%family = family
   select case (self%family)
   case (SHP_LAGRANGE)
   case (SHP_SERENDIPITY)
     if (self%elm /= CUB_QUA .and. self%elm /= CUB_HEX) &
-      error stop "shapefunc%set: serendipity elements are quadrilaterals and hexahedra"
+      & error stop "shapefunc%set: serendipity elements are quadrilaterals and hexahedra"
     if (p < 1 .or. p > 3) error stop "shapefunc%set: serendipity order must be 1, 2 or 3"
     if (any(self%infin /= SHP_FIN)) error stop "shapefunc%set: serendipity elements must be finite"
   case default
@@ -385,7 +398,9 @@ pure subroutine set(self, q, order, infin, family, nodes)
 
 end subroutine set
 
-!***********************************************************************
+!-----------------------------------------------------------------------
+! Evaluation
+!-----------------------------------------------------------------------
 
 pure subroutine eval(self, xi, func, derv, curv)
 !! Evaluate the shape functions and their derivatives at any point `xi`
@@ -417,8 +432,6 @@ pure subroutine eval(self, xi, func, derv, curv)
   end do
 
 end subroutine eval
-
-!***********************************************************************
 
 pure subroutine eval_products(self, xi, func, derv, curv)
 !! Evaluate the product functions of the lattice `basis` and their
@@ -471,8 +484,6 @@ pure subroutine eval_products(self, xi, func, derv, curv)
 
 end subroutine eval_products
 
-!***********************************************************************
-
 pure function skip(n, k, l) result(mask)
 !! Mask of `1:n` without `k` and `l`
 
@@ -485,26 +496,27 @@ pure function skip(n, k, l) result(mask)
 
 end function skip
 
-!***********************************************************************
+!-----------------------------------------------------------------------
+! Inspection and output
+!-----------------------------------------------------------------------
 
-pure logical function is_valid(self)
+pure function is_valid(self) result(ok)
 !! True if the shape functions are set and their arrays are consistent
 
   class(shapefunc), intent(in) :: self
+  logical :: ok
 
-  is_valid = allocated(self%lattice) .and. allocated(self%coords) .and. allocated(self%func) &
-       .and. allocated(self%derv) .and. allocated(self%curv)
-  if (.not. is_valid) return
-  is_valid = self%nnodes > 0 .and. self%npoints > 0 &
-       .and. all(shape(self%lattice) == [self%nfactors, self%nnodes]) &
-       .and. all(shape(self%coords)  == [self%dim, self%nnodes]) &
-       .and. all(shape(self%func)    == [self%nnodes, self%npoints]) &
-       .and. all(shape(self%derv)    == [self%dim, self%nnodes, self%npoints]) &
-       .and. all(shape(self%curv)    == [self%dim, self%dim, self%nnodes, self%npoints])
+  ok = allocated(self%lattice) .and. allocated(self%coords) .and. allocated(self%func) &
+     & .and. allocated(self%derv) .and. allocated(self%curv)
+  if (.not. ok) return
+  ok = self%nnodes > 0 .and. self%npoints > 0 &
+     & .and. all(shape(self%lattice) == [self%nfactors, self%nnodes]) &
+     & .and. all(shape(self%coords)  == [self%dim, self%nnodes]) &
+     & .and. all(shape(self%func)    == [self%nnodes, self%npoints]) &
+     & .and. all(shape(self%derv)    == [self%dim, self%nnodes, self%npoints]) &
+     & .and. all(shape(self%curv)    == [self%dim, self%dim, self%nnodes, self%npoints])
 
 end function is_valid
-
-!***********************************************************************
 
 subroutine summary(self, unit)
 !! Write element type, dimension, order, infinitude and numbers of nodes
@@ -519,21 +531,19 @@ subroutine summary(self, unit)
   if (present(unit)) u = unit
 
   if (self%elm == 0) then
-    write(u,"(A)") "shapefunc: not set"
+    write(u, "(a)") "shapefunc: not set"
     return
   end if
 
-  write(u,"(A,A)")              "Element:    ", names(self%elm)
-  write(u,"(A,I0)")             "Dimension:  ", self%dim
-  write(u,"(A,I0)")             "Order:      ", self%order
-  write(u,"(A,A)")              "Family:     ", trim(familynames(self%family))
-  write(u,"(A,*(A,:,', '))")    "Infinitude: ", infnames(self%infin(1:self%dim))
-  write(u,"(A,I0)")             "Nodes:      ", self%nnodes
-  write(u,"(A,I0)")             "Points:     ", self%npoints
+  write(u, "(a,a)")              "Element:    ", names(self%elm)
+  write(u, "(a,i0)")             "Dimension:  ", self%dim
+  write(u, "(a,i0)")             "Order:      ", self%order
+  write(u, "(a,a)")              "Family:     ", trim(familynames(self%family))
+  write(u, "(a,*(a,:,', '))")    "Infinitude: ", infnames(self%infin(1:self%dim))
+  write(u, "(a,i0)")             "Nodes:      ", self%nnodes
+  write(u, "(a,i0)")             "Points:     ", self%npoints
 
 end subroutine summary
-
-!***********************************************************************
 
 subroutine show(self, unit)
 !! Write the summary, then for every point and node the value and first
@@ -550,17 +560,15 @@ subroutine show(self, unit)
   call self%summary(u)
   if (.not. self%is_valid()) return
 
-  write(u,"(A)") "Point, node, value, first derivatives"
+  write(u, "(a)") "Point, node, value, first derivatives"
   do g = 1, self%npoints
     do i = 1, self%nnodes
-      write(u,"(2I5,*(1X,ES23.15E3))") g, i, self%func(i,g), self%derv(:,i,g)
+      write(u, "(2i5,*(1x,es23.15e3))") g, i, self%func(i,g), self%derv(:,i,g)
     end do
-    write(u,"(A10,*(1X,ES23.15E3))") "Sum", sum(self%func(:,g)), sum(self%derv(:,:,g), dim=2)
+    write(u, "(a10,*(1x,es23.15e3))") "Sum", sum(self%func(:,g)), sum(self%derv(:,:,g), dim=2)
   end do
 
 end subroutine show
-
-!***********************************************************************
 
 subroutine numbering(self, unit)
 !! Write the node numbers and nodal coordinates
@@ -576,14 +584,12 @@ subroutine numbering(self, unit)
   call self%summary(u)
   if (.not. self%is_valid()) return
 
-  write(u,"(A)") "Node, coordinates"
+  write(u, "(a)") "Node, coordinates"
   do i = 1, self%nnodes
-    write(u,"(I5,*(1X,F10.6))") i, self%coords(:,i)
+    write(u, "(i5,*(1x,f10.6))") i, self%coords(:,i)
   end do
 
 end subroutine numbering
-
-!***********************************************************************
 
 pure subroutine destroy(self)
 !! Deallocate and reset to the unset state
@@ -611,9 +617,9 @@ pure subroutine destroy(self)
 
 end subroutine destroy
 
-!***********************************************************************
+!-----------------------------------------------------------------------
 ! One-dimensional functions
-!***********************************************************************
+!-----------------------------------------------------------------------
 
 pure subroutine basis(family, p, s, f, d, c)
 !! The \(p+1\) one-dimensional functions of a family, with first and
@@ -662,15 +668,13 @@ pure subroutine basis(family, p, s, f, d, c)
       d(a) = 0
       c(a) = 0
       do j = 0, a - 1
-        call multiply(f(a), d(a), c(a), (p*s - j)/(j + 1), real(p, rk)/(j + 1), 0.0_rk)
+        call multiply(f(a), d(a), c(a), (p*s - j)/(j + 1), real(p, rk)/(j + 1), 0._rk)
       end do
     end do
 
   end select
 
 end subroutine basis
-
-!***********************************************************************
 
 pure subroutine lagrange(t, a, s, f, d, c)
 !! Lagrange polynomial of node `a` on the nodes `t`, with first and second
@@ -688,14 +692,12 @@ pure subroutine lagrange(t, a, s, f, d, c)
   c = 0
   do j = 0, ubound(t, 1)
     if (j == a) cycle
-    call multiply(f, d, c, (s - t(j))/(t(a) - t(j)), 1/(t(a) - t(j)), 0.0_rk)
+    call multiply(f, d, c, (s - t(j))/(t(a) - t(j)), 1/(t(a) - t(j)), 0._rk)
   end do
 
 end subroutine lagrange
 
-!***********************************************************************
-
-pure subroutine multiply(f, d, c, g, dg, cg)
+elemental subroutine multiply(f, d, c, g, dg, cg)
 !! Multiply a function by a factor, updating the value and derivatives by
 !! the product rule
 
@@ -707,8 +709,6 @@ pure subroutine multiply(f, d, c, g, dg, cg)
   f = f*g
 
 end subroutine multiply
-
-!***********************************************************************
 
 pure function node_coordinate(family, p, a) result(x)
 !! Coordinates of lattice indices `a` along a tensor direction: equispaced
@@ -731,8 +731,6 @@ pure function node_coordinate(family, p, a) result(x)
   end if
 
 end function node_coordinate
-
-!***********************************************************************
 
 pure function lattice_coords(self, a) result(x)
 !! Reference coordinates of the lattice points `a`
@@ -757,9 +755,9 @@ pure function lattice_coords(self, a) result(x)
 
 end function lattice_coords
 
-!***********************************************************************
+!-----------------------------------------------------------------------
 ! Serendipity elements
-!***********************************************************************
+!-----------------------------------------------------------------------
 
 pure function serendipity(p, x) result(t)
 !! Serendipity functions of order `p` as combinations of the
@@ -793,8 +791,6 @@ pure function serendipity(p, x) result(t)
 
 end function serendipity
 
-!***********************************************************************
-
 pure function serendipity_exponents(p, d) result(e)
 !! Exponents of the monomials spanning the serendipity space of order `p`
 !! in `d` dimensions: superlinear degree (the degree counting only the
@@ -817,8 +813,6 @@ pure function serendipity_exponents(p, d) result(e)
   e = e(:,1:n)
 
 end function serendipity_exponents
-
-!***********************************************************************
 
 pure subroutine solve(a, b)
 !! Solve \(A X = B\) in place (`b` becomes \(X\)) by Gaussian elimination
@@ -848,9 +842,9 @@ pure subroutine solve(a, b)
 
 end subroutine solve
 
-!***********************************************************************
+!-----------------------------------------------------------------------
 ! Node numbering
-!***********************************************************************
+!-----------------------------------------------------------------------
 
 pure function line_lattice(p) result(a)
 !! Lattice of a line of order `p`: vertices, then interior nodes
@@ -867,8 +861,6 @@ pure function line_lattice(p) result(a)
   end if
 
 end function line_lattice
-
-!***********************************************************************
 
 pure recursive function quad_lattice(p) result(a)
 !! Lattice of a quadrilateral of order `p`: vertices, edges, interior
@@ -895,8 +887,6 @@ pure recursive function quad_lattice(p) result(a)
 
 end function quad_lattice
 
-!***********************************************************************
-
 pure recursive function hex_lattice(p) result(a)
 !! Lattice of a hexahedron of order `p`: vertices, edges, faces, interior
 !! (recursively of order `p-2`)
@@ -905,7 +895,7 @@ pure recursive function hex_lattice(p) result(a)
   integer, allocatable :: a(:,:)
 
   integer, parameter :: edges(2,12) = reshape([1,2, 2,3, 3,4, 4,1, 5,6, 6,7, 7,8, 8,5, &
-                                               1,5, 2,6, 3,7, 4,8], [2, 12])
+                                             & 1,5, 2,6, 3,7, 4,8], [2, 12])
   integer, parameter :: fixed(6) = [3, 3, 1, 1, 2, 2]             ! Direction normal to face
   integer, parameter :: plane(2,6) = reshape([1,2, 1,2, 2,3, 2,3, 1,3, 1,3], [2, 6])
   integer :: v(3,8), e, n, m
@@ -937,8 +927,6 @@ pure recursive function hex_lattice(p) result(a)
 
 end function hex_lattice
 
-!***********************************************************************
-
 pure recursive function tri_lattice(p) result(a)
 !! Barycentric lattice of a triangle of order `p`: vertices, edges,
 !! interior (recursively of order `p-3`)
@@ -963,8 +951,6 @@ pure recursive function tri_lattice(p) result(a)
   if (p >= 3) a(:,n+1:) = tri_lattice(p - 3) + 1
 
 end function tri_lattice
-
-!***********************************************************************
 
 pure recursive function tet_lattice(p) result(a)
 !! Barycentric lattice of a tetrahedron of order `p`: vertices, edges,
@@ -1002,8 +988,6 @@ pure recursive function tet_lattice(p) result(a)
   if (p >= 4) a(:,n+1:) = tet_lattice(p - 4) + 1
 
 end function tet_lattice
-
-!***********************************************************************
 
 pure function wedge_lattice(p) result(a)
 !! Lattice of a wedge of order `p`: three barycentric indices and one
@@ -1071,8 +1055,6 @@ pure function wedge_lattice(p) result(a)
 
 end function wedge_lattice
 
-!***********************************************************************
-
 pure subroutine add_edge(a, n, va, vb, p)
 !! Append the `p-1` interior lattice points of the edge from `va` to `vb`
 
@@ -1089,7 +1071,5 @@ pure subroutine add_edge(a, n, va, vb, p)
   end do
 
 end subroutine add_edge
-
-!***********************************************************************
 
 end module shapefuncs
