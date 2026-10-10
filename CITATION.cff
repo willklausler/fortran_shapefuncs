@@ -1,0 +1,16 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "fortran_shapefuncs: Finite element shape functions, including mapped infinite elements"
+type: software
+authors:
+  - family-names: Klausler
+    given-names: Will
+version: 0.2.0
+date-released: 2026-10-10
+license: MIT
+repository-code: "https://github.com/willklausler/fortran_shapefuncs"
+url: "https://willklausler.github.io/fortran_shapefuncs/"
+keywords:
+  - Fortran
+  - shape functions
+  - finite element

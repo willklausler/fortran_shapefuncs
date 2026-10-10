@@ -1,154 +1,124 @@
 # fortran_shapefuncs
 
 [![CI](https://github.com/willklausler/fortran_shapefuncs/actions/workflows/ci.yml/badge.svg)](https://github.com/willklausler/fortran_shapefuncs/actions/workflows/ci.yml)
+[![Docs](https://github.com/willklausler/fortran_shapefuncs/actions/workflows/docs.yml/badge.svg)](https://willklausler.github.io/fortran_shapefuncs/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-Shape functions for the finite element method, packaged as one derived type,
-`shapefunc`, that works with the cubatures of
+Shape functions for the finite element method: one derived type, `shapefunc`,
+that holds the shape functions of an element and their first and second
+derivatives at the points of a cubature from
 [fortran_cubatures](https://github.com/willklausler/fortran_cubatures).
 
-- Lines, triangles, quadrilaterals, tetrahedra, hexahedra and wedges (prisms)
-- Lagrange elements of any order, with values, first and second derivatives
-- Serendipity quadrilaterals and hexahedra: 8-, 12-, 20- and 32-node elements
-- Mapped infinite elements for unbounded domains: lines, quadrilaterals,
-  hexahedra, and wedges along their axis
+```fortran
+use cubatures
+use shapefuncs
+type(cubature) :: q
+type(shapefunc) :: s
+
+q = cubature(CUB_HEX, 4)                     ! integration points
+s = shapefunc(q, 2)                          ! 27-node hexahedron at those points
+print *, s%nnodes, sum(s%func(:,1))          ! 27  1.0: a partition of unity
+
+s = shapefunc(q, 2, family=SHP_SERENDIPITY)
+print *, s%nnodes                            ! 20
+s = shapefunc(cubature(CUB_LIN, 2), 1, [SHP_INF])
+print *, s%coords                            ! -1.0  0.0, infinite at xi = 1
+```
+
+> Coding agents: the complete API reference is [llms.txt](llms.txt), and
+> contributor instructions are in [AGENTS.md](AGENTS.md).
+
+## Features
+
+- Lines, triangles, quadrilaterals, tetrahedra, hexahedra and wedges (prisms).
+- Lagrange elements of any order, with values, first and second derivatives.
+- Serendipity quadrilaterals and hexahedra: 8-, 12-, 20- and 32-node elements.
+- Mapped infinite elements for unbounded domains on lines, quadrilaterals,
+  hexahedra, and wedges along their axis.
 - Classical node numbering (vertices, edges, faces, interior), or any
-  numbering given at run time
-- Pure procedures, Fortran 2018, fpm and make builds
+  numbering given at run time.
+- Pure procedures, no module state.
+
+Conventions: the reference elements of fortran_cubatures, `s%func(node, point)`
+with derivatives in the leading dimensions, and invalid input stops the program.
 
 ## Installation
 
-Add the package to your `fpm.toml`:
+With [fpm](https://fpm.fortran-lang.org) 0.13 or later, add to your `fpm.toml`:
 
 ```toml
 [dependencies]
 fortran_shapefuncs = { git = "https://github.com/willklausler/fortran_shapefuncs" }
 ```
 
-Without fpm, `make && make install PREFIX=...` builds and installs the library,
-the module files and a pkg-config file. See
-[Getting started](manual/getting-started.md).
-
-## Quick start
-
-```fortran
-use cubatures,  only: cubature, rk, CUB_HEX
-use shapefuncs, only: shapefunc, SHP_FIN, SHP_INF, SHP_CHP
-
-type(cubature) :: q
-type(shapefunc) :: s
-
-q = cubature(CUB_HEX, 4)     ! integration points
-s = shapefunc(q, 2)          ! 27-node quadratic hexahedron at those points
-
-! s%func(i,g)       N_i at point g
-! s%derv(:,i,g)     dN_i/dxi
-! s%curv(:,:,i,g)   d2N_i/dxi2
-```
-
-In an element loop, the Jacobian is `matmul(xnodes, transpose(s%derv(:,:,g)))`.
-Infinite directions are flagged per direction. Use mapping functions for the
-geometry and chopped functions for the solution, which vanishes at infinity:
-
-```fortran
-geom  = shapefunc(q, 1, [SHP_FIN, SHP_FIN, SHP_INF])   ! infinite at xi_3 = 1
-field = shapefunc(q, 1, [SHP_FIN, SHP_FIN, SHP_CHP])
-```
-
-Serendipity elements and a caller-defined node ordering are optional arguments:
-
-```fortran
-s = shapefunc(q, 2, family=SHP_SERENDIPITY)              ! 20-node hexahedron
-s = shapefunc(q, 2, family=SHP_SERENDIPITY, nodes=perm)  ! your node k is node perm(k)
-```
-
-The runnable example is [example/shapefuncs_example.f90](example/shapefuncs_example.f90):
-`fpm run --example`.
-
-## API
-
-| Entity | Description |
-| --- | --- |
-| `shapefunc(q, order[, infin, family, nodes])` | Constructor. `q` is a `cubature`, `infin` has size 1 or `q%dim`, `nodes` is a permutation |
-| `call s%set(q, order[, infin, family, nodes])` | Build in place, reusing the object |
-| `call s%eval(xi, func, derv, curv)` | Evaluate at any point of the reference element |
-| `s%elm`, `s%dim`, `s%order`, `s%family` | Element type (`CUB_*`), dimension, order, family |
-| `s%nnodes`, `s%npoints` | Numbers of nodes and cubature points |
-| `s%infin(3)` | Infinitude per direction, `SHP_*` |
-| `s%func(nnodes, npoints)` | Values |
-| `s%derv(dim, nnodes, npoints)` | First derivatives |
-| `s%curv(dim, dim, nnodes, npoints)` | Second derivatives |
-| `s%coords(dim, nnodes)` | Nodal coordinates |
-| `s%lattice(:, nnodes)` | Integer lattice position of each node |
-| `s%is_valid()` | `.true.` if set and consistent |
-| `call s%summary([unit])`, `show`, `numbering` | Print a summary, values, or nodes |
-| `call s%destroy()` | Deallocate and reset |
-| `SHP_FIN`, `SHP_INF`, `SHP_CHP` | Finite, infinite (mapping), infinite (chopped) |
-| `SHP_LAGRANGE`, `SHP_SERENDIPITY` | Element family |
-
-Invalid input stops with `error stop` and a message. The
-[API reference](manual/api.md) lists every condition.
-
-## Elements
-
-| Constant | Element | Nodes, order p | Orders | Infinite directions |
-| --- | --- | --- | --- | --- |
-| `CUB_LIN` | line | p+1 | ≥ 0 | 1 |
-| `CUB_QUA` | quadrilateral | (p+1)² | ≥ 0 | any |
-| `CUB_HEX` | hexahedron | (p+1)³ | ≥ 0 | any |
-| `CUB_TRI` | triangle | (p+1)(p+2)/2 | ≥ 1 | none |
-| `CUB_TET` | tetrahedron | (p+1)(p+2)(p+3)/6 | ≥ 1 | none |
-| `CUB_WED` | wedge | (p+1)²(p+2)/2 | ≥ 1 | axial (3) |
-| `CUB_QUA`, serendipity | quadrilateral | 4p | 1–3 | none |
-| `CUB_HEX`, serendipity | hexahedron | 8 + 12(p−1) | 1–3 | none |
-
-The reference elements are those of `fortran_cubatures`. The
-[user manual](manual/index.md) ([online](https://willklausler.github.io/fortran_shapefuncs/page/index.html),
-with the [API documentation](https://willklausler.github.io/fortran_shapefuncs/)) describes the shape functions, the
-[node numbering](manual/elements.md) and the
-[infinite elements](manual/infinite-elements.md).
-
-## Building, testing and documentation
+With make, which clones fortran_cubatures and builds
+`build/make/libfortran_shapefuncs.a` (both modules) and the module files:
 
 ```sh
-fpm test --profile debug     # bounds checks, sanitizers, FP traps
-fpm test --profile release
-fpm run --example
-make test                    # without fpm
-ford ford.md                 # API documentation and manual in docs/
+make FC=gfortran && make test
+make install PREFIX=$HOME/.local    # library, .mod files and man page
 ```
 
-For every element and family, a sweep of orders and every combination of
-infinite directions, the tests check nodal interpolation, exact reproduction of the
-element's function space with first and second derivatives, finite
-differences, and partition of unity. They also check the classical numbering
-node by node, closed forms from the literature and caller-defined orderings. CI runs gfortran 13–15,
-Intel ifx and NVIDIA nvfortran on Linux, gfortran on macOS and Windows, the
-make build and the documentation build, and publishes the documentation
-to GitHub Pages from `main`.
+## Documentation
 
-## Pedigree and support
+- [User manual and API documentation](https://willklausler.github.io/fortran_shapefuncs/), generated with FORD (`make doc`)
+- [llms.txt](llms.txt): the API reference as one plain-text file, also the manual's source
+- `man 3 shapefuncs` after `make install` ([man/shapefuncs.3](man/shapefuncs.3))
+- Example programs in [example/](example/) (`fpm run --example --all`) and an app in [app/](app/) (`fpm run`) that tabulates the interpolation error against order for every element type
 
-The finite shape functions are the standard Lagrange and serendipity
-elements [6, 7], with Silvester's formula for simplices [5]. The infinite elements are the mapped
-infinite elements of Bettess [1] and Zienkiewicz, Emson and Bettess [2],
-generalised to higher orders [3, 4]. Every function is verified by the tests
-described above. The code has not been independently reviewed. It is
-maintained by the author on a best-effort basis.
+## Compilers
 
-Please report bugs and request features through
-[GitHub issues](https://github.com/willklausler/fortran_shapefuncs/issues).
-Pull requests are welcome; please include a test.
+CI tests every push on:
+
+| Compiler | Linux | macOS | Windows |
+| --- | --- | --- | --- |
+| gfortran 13, 14 | yes | yes | yes |
+| ifx 2026 | yes | | yes |
+| LLVM flang 21 | yes | | |
+| nvfortran 26 | yes | | |
+
+There are no known compiler limitations; see [llms.txt](llms.txt#compiler-notes).
+
+## Why another shape-function package?
+
+No other Fortran package gives finite element shape functions as a library.
+[FEM_BASIS](https://people.sc.fsu.edu/~jburkardt/f_src/fem_basis/fem_basis.html)
+evaluates Lagrange basis functions of any degree, but only on simplices and
+with no node numbering for meshes.
+[FEM2D_PACK](https://people.sc.fsu.edu/~jburkardt/f_src/fem2d_pack/fem2d_pack.html)
+has low-order 2D triangles and quadrilaterals only.
+[FELIPE](https://people.bath.ac.uk/mbr20/felipe/) is a Fortran 77 teaching
+package whose programs include mapped infinite elements in 1D and 2D, built
+into the solvers. Solvers such as [Elmer](https://github.com/ElmerCSC/elmerfem)
+keep their shape functions inside. This package covers all six FE elements of
+any order, serendipity and mapped infinite elements, through one derived type
+that works with fortran_cubatures. Every element is verified by
+function-space reproduction tests, and it is packaged for fpm and tested on
+several compilers.
 
 ## References
 
-1. Bettess, P. (1977). Infinite elements. *International Journal for Numerical Methods in Engineering*, 11(1), 53–64. [doi:10.1002/nme.1620110107](https://doi.org/10.1002/nme.1620110107)
-2. Zienkiewicz, O. C., Emson, C., Bettess, P. (1983). A novel boundary infinite element. *International Journal for Numerical Methods in Engineering*, 19(3), 393–404. [doi:10.1002/nme.1620190307](https://doi.org/10.1002/nme.1620190307)
-3. Marques, J. M. M. C., Owen, D. R. J. (1984). Infinite elements in quasi-static materially nonlinear problems. *Computers & Structures*, 18(4), 739–751. [doi:10.1016/0045-7949(84)90019-1](https://doi.org/10.1016/0045-7949(84)90019-1)
-4. Bettess, P. (1992). *Infinite Elements*. Penshaw Press.
-5. Silvester, P. (1969). High-order polynomial triangular finite elements for potential problems. *International Journal of Engineering Science*, 7(8), 849–861. [doi:10.1016/0020-7225(69)90065-2](https://doi.org/10.1016/0020-7225(69)90065-2)
-6. Zienkiewicz, O. C., Taylor, R. L., Zhu, J. Z. (2005). *The Finite Element Method: Its Basis and Fundamentals*, 6th ed. Butterworth-Heinemann.
-7. Arnold, D. N., Awanou, G. (2011). The serendipity family of finite elements. *Foundations of Computational Mathematics*, 11(3), 337–344. [doi:10.1007/s10208-011-9087-3](https://doi.org/10.1007/s10208-011-9087-3)
+1. P. Bettess, Infinite elements, *International Journal for Numerical Methods in Engineering* 11(1), 53–64, 1977. [doi:10.1002/nme.1620110107](https://doi.org/10.1002/nme.1620110107)
+2. O. C. Zienkiewicz, C. Emson, P. Bettess, A novel boundary infinite element, *International Journal for Numerical Methods in Engineering* 19(3), 393–404, 1983. [doi:10.1002/nme.1620190307](https://doi.org/10.1002/nme.1620190307)
+3. J. M. M. C. Marques, D. R. J. Owen, Infinite elements in quasi-static materially nonlinear problems, *Computers & Structures* 18(4), 739–751, 1984. [doi:10.1016/0045-7949(84)90019-1](https://doi.org/10.1016/0045-7949(84)90019-1)
+4. P. Bettess, *Infinite Elements*, Penshaw Press, 1992.
+5. P. Silvester, High-order polynomial triangular finite elements for potential problems, *International Journal of Engineering Science* 7(8), 849–861, 1969. [doi:10.1016/0020-7225(69)90065-2](https://doi.org/10.1016/0020-7225(69)90065-2)
+6. O. C. Zienkiewicz, R. L. Taylor, J. Z. Zhu, *The Finite Element Method: Its Basis and Fundamentals*, 6th ed., Butterworth-Heinemann, 2005.
+7. D. N. Arnold, G. Awanou, The serendipity family of finite elements, *Foundations of Computational Mathematics* 11(3), 337–344, 2011. [doi:10.1007/s10208-011-9087-3](https://doi.org/10.1007/s10208-011-9087-3)
+
+The finite elements are the standard Lagrange and serendipity elements [6, 7],
+with Silvester's polynomials for simplices [5]. The infinite elements are those
+of Bettess [1] and Zienkiewicz, Emson and Bettess [2], generalised to higher
+orders [3, 4]. The code has not been independently reviewed.
+
+## Status and support
+
+Version 0.2.0. The API may still change before 1.0; changes are recorded in
+[CHANGELOG.md](CHANGELOG.md). Bug reports, questions and pull requests are
+welcome on [GitHub](https://github.com/willklausler/fortran_shapefuncs/issues);
+see [CONTRIBUTING.md](CONTRIBUTING.md). To cite this package, use
+[CITATION.cff](CITATION.cff).
 
 ## License
 
-[MIT](LICENSE) © 2025-2026 Will Klausler
+[MIT](LICENSE)

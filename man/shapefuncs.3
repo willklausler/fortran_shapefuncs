@@ -1,0 +1,95 @@
+.TH SHAPEFUNCS 3 "2026-10-10" "fortran_shapefuncs 0.2.0" "Fortran Library Functions"
+.SH NAME
+shapefuncs \- finite element shape functions, including mapped infinite elements
+.SH SYNOPSIS
+.nf
+.B use cubatures
+.B use shapefuncs
+.B type(shapefunc) :: s
+.B s = shapefunc(q, order [, infin] [, family] [, nodes])
+.fi
+.SH DESCRIPTION
+Module
+.B shapefuncs
+provides the derived type
+.BR shapefunc ,
+the shape functions N_i of a finite element and their first and second
+derivatives at the points of a
+.B cubature
+q from the module
+.BR cubatures .
+Values are real64.
+.SS Elements
+Lines, quadrilaterals and hexahedra of any order >= 0; triangles,
+tetrahedra and wedges of any order >= 1, on the reference elements of
+.BR cubatures ,
+selected by
+.BR q%elm .
+Nodes are equispaced and numbered vertices first, then edges, faces and
+interior, which gives the classical numbering for orders 1 to 3.
+.SS Constants
+.TP
+.BR SHP_FIN ", " SHP_INF ", " SHP_CHP
+Infinitude per direction: finite (default), infinite with mapping
+functions for the geometry, infinite with chopped functions for the
+solution. An infinite direction extends to infinity at xi = 1.
+.TP
+.BR SHP_LAGRANGE ", " SHP_SERENDIPITY
+Element family: full Lagrange (default), or serendipity quadrilaterals and
+hexahedra of order 1 to 3 (4, 8, 12 and 8, 20, 32 nodes).
+.SS Constructor
+.TP
+.BR shapefunc ( q ", " order " [, " infin "] [, " family "] [, " nodes ])
+.I infin
+has size 1 or
+.BR q%dim .
+.I nodes
+is a permutation: the caller's node k is node nodes(k) of the default
+numbering, and every output follows the caller's numbering.
+.SS Components
+.BR elm ", " dim ", " order ", " family ", " nnodes ", " npoints ", " infin(3) ,
+.BR lattice(:,nnodes) ", " coords(dim,nnodes) ,
+.BR func(nnodes,npoints) ", " derv(dim,nnodes,npoints) ,
+.BR curv(dim,dim,nnodes,npoints) .
+.SS Type-bound procedures
+.TP
+.BR "call s%set" ( q ", " order " [, " infin "] [, " family "] [, " nodes ])
+Build the shape functions in place, like the constructor.
+.TP
+.BR "call s%eval" ( xi ", " func ", " derv ", " curv )
+Evaluate at any point xi of the reference element.
+.TP
+.BR s%is_valid ()
+True if set and consistent.
+.TP
+.BR "call s%summary" "([" unit "]), " "call s%show" "([" unit "]), " "call s%numbering" "([" unit "])"
+Write the element, order, family, infinitude and numbers of nodes and
+points; show also writes every value and first derivative, numbering every
+nodal coordinate.
+.TP
+.BR "call s%destroy" ()
+Deallocate and reset.
+.SH NOTES
+Invalid arguments to the constructor or
+.B set
+stop the program with
+.B error stop
+and a message that starts with "shapefunc%set:". Errors cannot be caught.
+.PP
+Kinds are not exported; use real64 from iso_fortran_env. The module has no
+state, and everything except the output procedures is pure.
+.SH EXAMPLE
+.nf
+use cubatures
+use shapefuncs
+type(cubature) :: q
+type(shapefunc) :: s
+q = cubature(CUB_HEX, 4)
+s = shapefunc(q, 2)                  ! 27-node hexahedron
+print *, s%nnodes, sum(s%func(:,1))  ! 27  1.0000000000000000
+.fi
+.SH SEE ALSO
+The complete reference is llms.txt in the source distribution and
+https://willklausler.github.io/fortran_shapefuncs/
+.SH AUTHOR
+Will Klausler
