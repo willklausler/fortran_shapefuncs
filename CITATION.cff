@@ -17,6 +17,7 @@ authors:
     given-names: Will
     orcid: "https://orcid.org/0009-0000-4313-3696"
 version: 0.2.0
+doi: 10.5281/zenodo.23301496
 date-released: 2026-10-11
 license: MIT
 repository-code: "https://github.com/willklausler/fortran_shapefuncs"
