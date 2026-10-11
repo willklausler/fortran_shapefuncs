@@ -274,30 +274,39 @@ pure subroutine set(self, q, order, infin, family, nodes)
   integer, intent(in), optional :: family    !! `SHP_LAGRANGE` (default) or `SHP_SERENDIPITY`
   integer, intent(in), optional :: nodes(:)  !! Node ordering: `nodes(k)` is the default number of node `k`
 
-  integer :: g, k, p, n
+  integer :: g, k, p, n, inf(3), fam
+  integer, allocatable :: perm(:)
 
   if (.not. q%is_valid()) error stop "shapefunc%set: cubature is not set"
   if (order < 0) error stop "shapefunc%set: order must be non-negative"
 
-  call self%destroy()
-  self%elm   = q%elm
-  self%dim   = q%dim
-  self%order = order
+  ! Copy the arguments before destroy: they may be components of self
   p = order
-
+  inf = SHP_FIN
   if (present(infin)) then
     if (size(infin) == 1) then
-      self%infin(1:self%dim) = infin(1)
-    else if (size(infin) == self%dim) then
-      self%infin(1:self%dim) = infin
+      inf(1:q%dim) = infin(1)
+    else if (size(infin) == q%dim) then
+      inf(1:q%dim) = infin
     else
       error stop "shapefunc%set: size(infin) must be 1 or the dimension"
     end if
-    if (any(self%infin < SHP_FIN .or. self%infin > SHP_CHP)) &
-      & error stop "shapefunc%set: infin must be SHP_FIN, SHP_INF or SHP_CHP"
-    if (any(self%infin /= SHP_FIN) .and. p < 1) &
-      & error stop "shapefunc%set: infinite directions need order >= 1"
   end if
+  fam = SHP_LAGRANGE
+  if (present(family)) fam = family
+  if (present(nodes)) perm = nodes
+
+  call self%destroy()
+  self%elm    = q%elm
+  self%dim    = q%dim
+  self%order  = p
+  self%infin  = inf
+  self%family = fam
+
+  if (any(self%infin < SHP_FIN .or. self%infin > SHP_CHP)) &
+    & error stop "shapefunc%set: infin must be SHP_FIN, SHP_INF or SHP_CHP"
+  if (any(self%infin /= SHP_FIN) .and. p < 1) &
+    & error stop "shapefunc%set: infinite directions need order >= 1"
 
   ! Factor coordinates s = s0 + dsdxi xi, and the 1D family of each
   select case (self%elm)
@@ -332,7 +341,6 @@ pure subroutine set(self, q, order, infin, family, nodes)
   if (any(self%kinds == SIMPLEX) .and. p < 1) &
     & error stop "shapefunc%set: simplex and wedge orders must be >= 1"
 
-  if (present(family)) self%family = family
   select case (self%family)
   case (SHP_LAGRANGE)
   case (SHP_SERENDIPITY)
@@ -371,17 +379,17 @@ pure subroutine set(self, q, order, infin, family, nodes)
   self%nnodes = size(self%lattice, 2)
 
   ! Caller's node ordering
-  if (present(nodes)) then
-    if (size(nodes) /= self%nnodes) error stop "shapefunc%set: size(nodes) must be the number of nodes"
-    if (any(nodes < 1 .or. nodes > self%nnodes)) error stop "shapefunc%set: nodes must be a permutation"
+  if (allocated(perm)) then
+    if (size(perm) /= self%nnodes) error stop "shapefunc%set: size(nodes) must be the number of nodes"
+    if (any(perm < 1 .or. perm > self%nnodes)) error stop "shapefunc%set: nodes must be a permutation"
     do k = 1, self%nnodes
-      if (count(nodes == k) /= 1) error stop "shapefunc%set: nodes must be a permutation"
+      if (count(perm == k) /= 1) error stop "shapefunc%set: nodes must be a permutation"
     end do
-    self%lattice = self%lattice(:,nodes)
+    self%lattice = self%lattice(:,perm)
     if (allocated(self%trans)) then
-      self%trans = self%trans(nodes,:)
+      self%trans = self%trans(perm,:)
     else
-      self%basis = self%basis(:,nodes)
+      self%basis = self%basis(:,perm)
     end if
   end if
 

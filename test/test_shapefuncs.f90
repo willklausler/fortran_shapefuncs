@@ -663,6 +663,15 @@ subroutine test_interface()
   call check(b%is_valid() .and. b%elm == CUB_TET .and. b%nnodes == 20 .and. all(b%infin == SHP_FIN), &
             & "reuse with another element")
 
+  ! Arguments taken from the object itself
+  call a%set(q, 2, [SHP_FIN, SHP_CHP])
+  call a%set(q, a%order, a%infin(1:2))
+  call check(a%order == 2 .and. a%nnodes == 9 .and. all(a%infin == [SHP_FIN, SHP_CHP, SHP_FIN]), &
+            & "set with order and infin from the object")
+  b = shapefunc(cubature(CUB_HEX, 2), 2, family=SHP_SERENDIPITY)
+  call b%set(cubature(CUB_HEX, 2), b%order, family=b%family)
+  call check(b%nnodes == 20, "set with family from the object")
+
   call b%destroy()
   call check(.not. b%is_valid() .and. b%elm == 0 .and. b%nnodes == 0, "destroy")
 
