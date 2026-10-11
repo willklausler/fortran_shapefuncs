@@ -7,7 +7,7 @@ program demo_stiffness
   use shapefuncs
   implicit none
   real(dp), parameter :: xn(2,4) = reshape([0._dp, 0._dp, 1._dp, 0._dp, &
-                                            1._dp, 1._dp, 0._dp, 1._dp], [2, 4])  ! unit square
+                                          & 1._dp, 1._dp, 0._dp, 1._dp], [2, 4])  ! unit square
   type(cubature) :: q
   type(shapefunc) :: s
   real(dp) :: k(4,4), jac(2,2), jinv(2,2), detj, dndx(2,4)

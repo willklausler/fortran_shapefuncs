@@ -7,7 +7,7 @@ program demo_serendipity
   use shapefuncs
   implicit none
   integer, parameter :: edges(2,12) = reshape([1,2, 1,4, 1,5, 2,3, 2,6, 3,4, &
-                                               3,7, 4,8, 5,6, 5,8, 6,7, 7,8], [2, 12])
+                                             & 3,7, 4,8, 5,6, 5,8, 6,7, 7,8], [2, 12])
   type(cubature) :: q
   type(shapefunc) :: s
   real(dp) :: xmesh(3,20)

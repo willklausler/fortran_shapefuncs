@@ -138,14 +138,14 @@ subroutine check(cond, name)
 end subroutine check
 
 pure function is_close(a, b, rel_tol) result(ok)
-!! True if the arrays agree to `rel_tol` relative to the largest magnitude, at least 1
+  !! True if the arrays agree to `rel_tol` relative to the largest magnitude, at least 1
   real(dp), intent(in) :: a(:), b(:), rel_tol
   logical :: ok
   ok = maxval(abs(a - b)) <= rel_tol*max(1._dp, maxval(abs(a)), maxval(abs(b)))
 end function is_close
 
 function nodes(elm, order, family) result(n)
-!! Number of nodes of an element
+  !! Number of nodes of an element
   integer, intent(in) :: elm, order
   integer, intent(in), optional :: family
   integer :: n
@@ -155,7 +155,7 @@ function nodes(elm, order, family) result(n)
 end function nodes
 
 pure function expected_nodes(elm, p, family) result(n)
-!! Closed-form number of nodes
+  !! Closed-form number of nodes
   integer, intent(in) :: elm, p, family
   integer :: n
   if (family == SHP_SERENDIPITY) then
@@ -174,7 +174,7 @@ pure function expected_nodes(elm, p, family) result(n)
 end function expected_nodes
 
 subroutine check_element(elm, p, infin, family)
-!! Run every per-element check on one element, order, infinitude and family
+  !! Run every per-element check on one element, order, infinitude and family
 
   integer, intent(in) :: elm, p, infin(:)
   integer, intent(in), optional :: family
@@ -200,7 +200,7 @@ subroutine check_element(elm, p, infin, family)
 end subroutine check_element
 
 subroutine check_kronecker(s, label)
-!! N_i(x_j) = delta_ij
+  !! N_i(x_j) = delta_ij
 
   type(shapefunc), intent(in) :: s
   character(*), intent(in) :: label
@@ -221,15 +221,15 @@ subroutine check_kronecker(s, label)
 end subroutine check_kronecker
 
 subroutine check_reproduction(s, q, label)
-!! Interpolating any function of the element's space reproduces it and
-!! its first and second derivatives at every cubature point.
-!!
-!! The space is spanned by products of one function per direction: the
-!! monomials \(\xi^e\) along finite directions, \(\xi^e/(1-\xi)\) along
-!! mapped infinite directions and \((1-\xi)\xi^e\) along chopped
-!! directions, with \(e \le p\) per direction and total degree \(\le p\)
-!! over the simplex directions. Serendipity elements span the monomials of
-!! superlinear degree \(\le p\).
+  !! Interpolating any function of the element's space reproduces it and
+  !! its first and second derivatives at every cubature point.
+  !!
+  !! The space is spanned by products of one function per direction: the
+  !! monomials \(\xi^e\) along finite directions, \(\xi^e/(1-\xi)\) along
+  !! mapped infinite directions and \((1-\xi)\xi^e\) along chopped
+  !! directions, with \(e \le p\) per direction and total degree \(\le p\)
+  !! over the simplex directions. Serendipity elements span the monomials of
+  !! superlinear degree \(\le p\).
 
   type(shapefunc), intent(in) :: s
   type(cubature), intent(in) :: q
@@ -285,7 +285,7 @@ subroutine check_reproduction(s, q, label)
 end subroutine check_reproduction
 
 subroutine test_function(s, e, x, v, g, h)
-!! Product test function of exponents `e` at `x`, with gradient and Hessian
+  !! Product test function of exponents `e` at `x`, with gradient and Hessian
 
   type(shapefunc), intent(in) :: s
   integer, intent(in) :: e(3)
@@ -317,7 +317,7 @@ subroutine test_function(s, e, x, v, g, h)
 end subroutine test_function
 
 pure subroutine factor(family, e, x, u, du, cu)
-!! One-dimensional test function of a family, with derivatives
+  !! One-dimensional test function of a family, with derivatives
 
   integer, intent(in) :: family, e
   real(dp), intent(in) :: x
@@ -349,9 +349,9 @@ pure subroutine factor(family, e, x, u, du, cu)
 end subroutine factor
 
 subroutine check_finite_differences(s, q, label)
-!! Derivatives against fourth-order central differences, with a step
-!! that shrinks near the singularity at \(\xi=1\), and symmetry of the
-!! second derivatives
+  !! Derivatives against fourth-order central differences, with a step
+  !! that shrinks near the singularity at \(\xi=1\), and symmetry of the
+  !! second derivatives
 
   type(shapefunc), intent(in) :: s
   type(cubature), intent(in) :: q
@@ -393,8 +393,8 @@ subroutine check_finite_differences(s, q, label)
 end subroutine check_finite_differences
 
 subroutine check_sums(s, q, label)
-!! Without chopped directions the functions sum to 1 and their derivatives
-!! to 0; chopped functions vanish at infinity
+  !! Without chopped directions the functions sum to 1 and their derivatives
+  !! to 0; chopped functions vanish at infinity
 
   type(shapefunc), intent(in) :: s
   type(cubature), intent(in) :: q
@@ -427,7 +427,7 @@ subroutine check_sums(s, q, label)
 end subroutine check_sums
 
 subroutine test_numbering()
-!! Orders 1 to 3 reproduce the classical node numbering
+  !! Orders 1 to 3 reproduce the classical node numbering
 
   ! Node number at each tensor-product position, first coordinate fastest
   call tensor(CUB_LIN, 1, [1, 2])
@@ -467,7 +467,7 @@ subroutine test_numbering()
 end subroutine test_numbering
 
 subroutine tensor(elm, p, seq)
-!! Check the node number at each tensor-product position
+  !! Check the node number at each tensor-product position
   integer, intent(in) :: elm, p, seq(:)
   type(shapefunc) :: s
   integer :: n, a(3)
@@ -484,7 +484,7 @@ subroutine tensor(elm, p, seq)
 end subroutine tensor
 
 subroutine serendipity_nodes(elm, p)
-!! Serendipity nodes are the leading Lagrange nodes, on vertices and edges
+  !! Serendipity nodes are the leading Lagrange nodes, on vertices and edges
   integer, intent(in) :: elm, p
   type(shapefunc) :: s, l
   character(20) :: label
@@ -497,7 +497,7 @@ subroutine serendipity_nodes(elm, p)
 end subroutine serendipity_nodes
 
 subroutine lattice(elm, p, a)
-!! Check the lattice indices of every node
+  !! Check the lattice indices of every node
   integer, intent(in) :: elm, p, a(:)
   type(shapefunc) :: s
   character(20) :: label
@@ -509,8 +509,8 @@ subroutine lattice(elm, p, a)
 end subroutine lattice
 
 subroutine test_closed_forms()
-!! Compare with closed forms: linear mapping and chopped functions of
-!! Zienkiewicz, Emson and Bettess, quadratic Lagrange, linear tetrahedron
+  !! Compare with closed forms: linear mapping and chopped functions of
+  !! Zienkiewicz, Emson and Bettess, quadratic Lagrange, linear tetrahedron
 
   type(shapefunc) :: s
   real(dp) :: x, xi(3)
@@ -565,7 +565,7 @@ subroutine test_closed_forms()
 end subroutine test_closed_forms
 
 subroutine evaluate(s, x, f, d, c)
-!! Allocate the outputs and evaluate at `x`
+  !! Allocate the outputs and evaluate at `x`
   type(shapefunc), intent(in) :: s
   real(dp), intent(in) :: x(:)
   real(dp), allocatable, intent(out) :: f(:), d(:,:), c(:,:,:)
@@ -574,7 +574,7 @@ subroutine evaluate(s, x, f, d, c)
 end subroutine evaluate
 
 subroutine test_ordering()
-!! A caller-defined numbering permutes every output consistently
+  !! A caller-defined numbering permutes every output consistently
 
   call check_ordering(CUB_QUA, 2, SHP_LAGRANGE, [SHP_FIN, SHP_INF])
   call check_ordering(CUB_HEX, 2, SHP_SERENDIPITY, [SHP_FIN])
@@ -584,7 +584,7 @@ subroutine test_ordering()
 end subroutine test_ordering
 
 subroutine check_ordering(elm, p, family, infin)
-!! Compare a reversed and an identity numbering with the default one
+  !! Compare a reversed and an identity numbering with the default one
 
   integer, intent(in) :: elm, p, family, infin(:)
 
@@ -617,8 +617,8 @@ subroutine check_ordering(elm, p, family, infin)
 end subroutine check_ordering
 
 subroutine test_integration()
-!! Integrals of the shape functions with a cubature: the sum is the
-!! element measure, and linear simplex functions integrate to the same value
+  !! Integrals of the shape functions with a cubature: the sum is the
+  !! element measure, and linear simplex functions integrate to the same value
 
   real(dp), parameter :: measure(6) = [2._dp, 0.5_dp, 4._dp, 1._dp/6, 8._dp, 1._dp]
   type(cubature) :: q
@@ -642,7 +642,7 @@ subroutine test_integration()
 end subroutine test_integration
 
 subroutine test_interface()
-!! Constructor against `set`, broadcast of `infin`, reuse, `eval`, `destroy`
+  !! Constructor against `set`, broadcast of `infin`, reuse, `eval`, `destroy`
 
   type(cubature) :: q
   type(shapefunc) :: a, b
@@ -682,7 +682,7 @@ subroutine test_interface()
 end subroutine test_interface
 
 subroutine test_output()
-!! `summary`, `show` and `numbering` write to a unit, also when unset
+  !! `summary`, `show` and `numbering` write to a unit, also when unset
 
   type(shapefunc) :: s
   integer :: u, n, ios

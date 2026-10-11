@@ -24,7 +24,7 @@ program interpolation_convergence
       q = cubature(elements(i), degree)
       s = shapefunc(q, p)
       write(*, '(es11.2, " (", i3, ")")', advance='no') &
-        maxval(abs(matmul(f(s%coords), s%func) - f(q%abscissae))), s%nnodes
+        & maxval(abs(matmul(f(s%coords), s%func) - f(q%abscissae))), s%nnodes
     end do
     write(*, '(a)') ''
   end do

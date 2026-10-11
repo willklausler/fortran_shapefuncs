@@ -236,7 +236,7 @@ contains
 !-----------------------------------------------------------------------
 
 pure function new_shapefunc(q, order, infin, family, nodes) result(self)
-!! Construct shape functions of order `order` at the points of `q`; see `set`
+  !! Construct shape functions of order `order` at the points of `q`; see `set`
 
   type(cubature), intent(in) :: q            !! Cubature on the reference element
   integer, intent(in) :: order               !! Polynomial order
@@ -250,22 +250,22 @@ pure function new_shapefunc(q, order, infin, family, nodes) result(self)
 end function new_shapefunc
 
 pure subroutine set(self, q, order, infin, family, nodes)
-!! Build shape functions of order `order` at the points of `q`.
-!!
-!! `infin` has size 1 (same in every direction) or `q%dim`, and defaults to
-!! [[SHP_FIN]]. [[SHP_INF]] and [[SHP_CHP]] are allowed along the
-!! directions of lines, quadrilaterals and hexahedra, and along the axial
-!! direction 3 of wedges, with order \(\ge 1\).
-!!
-!! `family` [[SHP_SERENDIPITY]] selects the serendipity quadrilaterals and
-!! hexahedra of orders 1 to 3 (4, 8, 12 and 8, 20, 32 nodes), which must be
-!! finite.
-!!
-!! `nodes` is a permutation of `1:nnodes`: the caller's node `k` is node
-!! `nodes(k)` of the default numbering. All outputs then follow the
-!! caller's numbering.
-!!
-!! Stops on invalid input.
+  !! Build shape functions of order `order` at the points of `q`.
+  !!
+  !! `infin` has size 1 (same in every direction) or `q%dim`, and defaults to
+  !! [[SHP_FIN]]. [[SHP_INF]] and [[SHP_CHP]] are allowed along the
+  !! directions of lines, quadrilaterals and hexahedra, and along the axial
+  !! direction 3 of wedges, with order \(\ge 1\).
+  !!
+  !! `family` [[SHP_SERENDIPITY]] selects the serendipity quadrilaterals and
+  !! hexahedra of orders 1 to 3 (4, 8, 12 and 8, 20, 32 nodes), which must be
+  !! finite.
+  !!
+  !! `nodes` is a permutation of `1:nnodes`: the caller's node `k` is node
+  !! `nodes(k)` of the default numbering. All outputs then follow the
+  !! caller's numbering.
+  !!
+  !! Stops on invalid input.
 
   class(shapefunc), intent(inout) :: self
   type(cubature), intent(in) :: q            !! Cubature on the reference element
@@ -411,9 +411,9 @@ end subroutine set
 !-----------------------------------------------------------------------
 
 pure subroutine eval(self, xi, func, derv, curv)
-!! Evaluate the shape functions and their derivatives at any point `xi`
-!! of the reference element. The element must be set. Infinite
-!! directions are singular at \(\xi = 1\).
+  !! Evaluate the shape functions and their derivatives at any point `xi`
+  !! of the reference element. The element must be set. Infinite
+  !! directions are singular at \(\xi = 1\).
 
   class(shapefunc), intent(in) :: self
   real(rk), intent(in) :: xi(:)                                       !! Point, size `dim`
@@ -442,8 +442,8 @@ pure subroutine eval(self, xi, func, derv, curv)
 end subroutine eval
 
 pure subroutine eval_products(self, xi, func, derv, curv)
-!! Evaluate the product functions of the lattice `basis` and their
-!! derivatives at `xi`
+  !! Evaluate the product functions of the lattice `basis` and their
+  !! derivatives at `xi`
 
   class(shapefunc), intent(in) :: self
   real(rk), intent(in) :: xi(:)                                       !! Point, size `dim`
@@ -493,7 +493,7 @@ pure subroutine eval_products(self, xi, func, derv, curv)
 end subroutine eval_products
 
 pure function skip(n, k, l) result(mask)
-!! Mask of `1:n` without `k` and `l`
+  !! Mask of `1:n` without `k` and `l`
 
   integer, intent(in) :: n, k, l
   logical :: mask(n)
@@ -509,7 +509,7 @@ end function skip
 !-----------------------------------------------------------------------
 
 pure function is_valid(self) result(ok)
-!! True if the shape functions are set and their arrays are consistent
+  !! True if the shape functions are set and their arrays are consistent
 
   class(shapefunc), intent(in) :: self
   logical :: ok
@@ -527,8 +527,8 @@ pure function is_valid(self) result(ok)
 end function is_valid
 
 subroutine summary(self, unit)
-!! Write element type, dimension, order, infinitude and numbers of nodes
-!! and points
+  !! Write element type, dimension, order, infinitude and numbers of nodes
+  !! and points
 
   class(shapefunc), intent(in) :: self
   integer, intent(in), optional :: unit   !! Output unit, default `output_unit`
@@ -554,8 +554,8 @@ subroutine summary(self, unit)
 end subroutine summary
 
 subroutine show(self, unit)
-!! Write the summary, then for every point and node the value and first
-!! derivatives, and per point the sums over the nodes
+  !! Write the summary, then for every point and node the value and first
+  !! derivatives, and per point the sums over the nodes
 
   class(shapefunc), intent(in) :: self
   integer, intent(in), optional :: unit   !! Output unit, default `output_unit`
@@ -579,7 +579,7 @@ subroutine show(self, unit)
 end subroutine show
 
 subroutine numbering(self, unit)
-!! Write the node numbers and nodal coordinates
+  !! Write the node numbers and nodal coordinates
 
   class(shapefunc), intent(in) :: self
   integer, intent(in), optional :: unit   !! Output unit, default `output_unit`
@@ -600,7 +600,7 @@ subroutine numbering(self, unit)
 end subroutine numbering
 
 pure subroutine destroy(self)
-!! Deallocate and reset to the unset state
+  !! Deallocate and reset to the unset state
 
   class(shapefunc), intent(inout) :: self
 
@@ -630,8 +630,8 @@ end subroutine destroy
 !-----------------------------------------------------------------------
 
 pure subroutine basis(family, p, s, f, d, c)
-!! The \(p+1\) one-dimensional functions of a family, with first and
-!! second derivatives, at factor coordinate `s`
+  !! The \(p+1\) one-dimensional functions of a family, with first and
+  !! second derivatives, at factor coordinate `s`
 
   integer, intent(in) :: family      !! `SHP_FIN`, `SHP_INF`, `SHP_CHP` or `SIMPLEX`
   integer, intent(in) :: p           !! Order
@@ -685,8 +685,8 @@ pure subroutine basis(family, p, s, f, d, c)
 end subroutine basis
 
 pure subroutine lagrange(t, a, s, f, d, c)
-!! Lagrange polynomial of node `a` on the nodes `t`, with first and second
-!! derivatives, at `s`
+  !! Lagrange polynomial of node `a` on the nodes `t`, with first and second
+  !! derivatives, at `s`
 
   real(rk), intent(in) :: t(0:)      !! Nodes
   integer, intent(in) :: a           !! Node index
@@ -706,8 +706,8 @@ pure subroutine lagrange(t, a, s, f, d, c)
 end subroutine lagrange
 
 elemental subroutine multiply(f, d, c, g, dg, cg)
-!! Multiply a function by a factor, updating the value and derivatives by
-!! the product rule
+  !! Multiply a function by a factor, updating the value and derivatives by
+  !! the product rule
 
   real(rk), intent(inout) :: f, d, c   !! Value, first and second derivative
   real(rk), intent(in) :: g, dg, cg    !! Factor, first and second derivative
@@ -719,9 +719,9 @@ elemental subroutine multiply(f, d, c, g, dg, cg)
 end subroutine multiply
 
 pure function node_coordinate(family, p, a) result(x)
-!! Coordinates of lattice indices `a` along a tensor direction: equispaced
-!! on \([-1,1]\) for finite directions (0 for order 0), and
-!! \(-1 + 2a/(p+1)\) for infinite directions
+  !! Coordinates of lattice indices `a` along a tensor direction: equispaced
+  !! on \([-1,1]\) for finite directions (0 for order 0), and
+  !! \(-1 + 2a/(p+1)\) for infinite directions
 
   integer, intent(in) :: family      !! `SHP_*`
   integer, intent(in) :: p           !! Order
@@ -741,7 +741,7 @@ pure function node_coordinate(family, p, a) result(x)
 end function node_coordinate
 
 pure function lattice_coords(self, a) result(x)
-!! Reference coordinates of the lattice points `a`
+  !! Reference coordinates of the lattice points `a`
 
   class(shapefunc), intent(in) :: self
   integer, intent(in) :: a(:,:)      !! Lattice indices, shape `[nfactors, n]`
@@ -768,12 +768,12 @@ end function lattice_coords
 !-----------------------------------------------------------------------
 
 pure function serendipity(p, x) result(t)
-!! Serendipity functions of order `p` as combinations of the
-!! tensor-product Lagrange functions: \(N^S_i = \sum_j T_{ij} N^L_j\).
-!!
-!! With the serendipity monomials \(m_k\), \(V_{ki} = m_k(x_i)\) at the
-!! serendipity nodes and \(W_{kj} = m_k(x_j)\) at all tensor-product
-!! nodes, \(T = V^{-1} W\), because \(T_{ij} = N^S_i(x_j)\).
+  !! Serendipity functions of order `p` as combinations of the
+  !! tensor-product Lagrange functions: \(N^S_i = \sum_j T_{ij} N^L_j\).
+  !!
+  !! With the serendipity monomials \(m_k\), \(V_{ki} = m_k(x_i)\) at the
+  !! serendipity nodes and \(W_{kj} = m_k(x_j)\) at all tensor-product
+  !! nodes, \(T = V^{-1} W\), because \(T_{ij} = N^S_i(x_j)\).
 
   integer, intent(in) :: p             !! Order
   real(rk), intent(in) :: x(:,:)       !! Tensor-product nodes, shape `[dim, n]`, serendipity nodes first
@@ -800,9 +800,9 @@ pure function serendipity(p, x) result(t)
 end function serendipity
 
 pure function serendipity_exponents(p, d) result(e)
-!! Exponents of the monomials spanning the serendipity space of order `p`
-!! in `d` dimensions: superlinear degree (the degree counting only the
-!! variables of exponent \(\ge 2\)) at most `p` [7]
+  !! Exponents of the monomials spanning the serendipity space of order `p`
+  !! in `d` dimensions: superlinear degree (the degree counting only the
+  !! variables of exponent \(\ge 2\)) at most `p` [7]
 
   integer, intent(in) :: p, d
   integer, allocatable :: e(:,:)       !! Exponents, shape `[d, n]`
@@ -823,8 +823,8 @@ pure function serendipity_exponents(p, d) result(e)
 end function serendipity_exponents
 
 pure subroutine solve(a, b)
-!! Solve \(A X = B\) in place (`b` becomes \(X\)) by Gaussian elimination
-!! with partial pivoting
+  !! Solve \(A X = B\) in place (`b` becomes \(X\)) by Gaussian elimination
+  !! with partial pivoting
 
   real(rk), intent(inout) :: a(:,:)    !! Square matrix, destroyed
   real(rk), intent(inout) :: b(:,:)    !! Right-hand sides, overwritten by the solution
@@ -855,7 +855,7 @@ end subroutine solve
 !-----------------------------------------------------------------------
 
 pure function line_lattice(p) result(a)
-!! Lattice of a line of order `p`: vertices, then interior nodes
+  !! Lattice of a line of order `p`: vertices, then interior nodes
 
   integer, intent(in) :: p
   integer, allocatable :: a(:,:)
@@ -871,8 +871,8 @@ pure function line_lattice(p) result(a)
 end function line_lattice
 
 pure recursive function quad_lattice(p) result(a)
-!! Lattice of a quadrilateral of order `p`: vertices, edges, interior
-!! (recursively of order `p-2`)
+  !! Lattice of a quadrilateral of order `p`: vertices, edges, interior
+  !! (recursively of order `p-2`)
 
   integer, intent(in) :: p
   integer, allocatable :: a(:,:)
@@ -896,8 +896,8 @@ pure recursive function quad_lattice(p) result(a)
 end function quad_lattice
 
 pure recursive function hex_lattice(p) result(a)
-!! Lattice of a hexahedron of order `p`: vertices, edges, faces, interior
-!! (recursively of order `p-2`)
+  !! Lattice of a hexahedron of order `p`: vertices, edges, faces, interior
+  !! (recursively of order `p-2`)
 
   integer, intent(in) :: p
   integer, allocatable :: a(:,:)
@@ -936,8 +936,8 @@ pure recursive function hex_lattice(p) result(a)
 end function hex_lattice
 
 pure recursive function tri_lattice(p) result(a)
-!! Barycentric lattice of a triangle of order `p`: vertices, edges,
-!! interior (recursively of order `p-3`)
+  !! Barycentric lattice of a triangle of order `p`: vertices, edges,
+  !! interior (recursively of order `p-3`)
 
   integer, intent(in) :: p
   integer, allocatable :: a(:,:)
@@ -961,8 +961,8 @@ pure recursive function tri_lattice(p) result(a)
 end function tri_lattice
 
 pure recursive function tet_lattice(p) result(a)
-!! Barycentric lattice of a tetrahedron of order `p`: vertices, edges,
-!! faces, interior (recursively of order `p-4`)
+  !! Barycentric lattice of a tetrahedron of order `p`: vertices, edges,
+  !! faces, interior (recursively of order `p-4`)
 
   integer, intent(in) :: p
   integer, allocatable :: a(:,:)
@@ -998,9 +998,9 @@ pure recursive function tet_lattice(p) result(a)
 end function tet_lattice
 
 pure function wedge_lattice(p) result(a)
-!! Lattice of a wedge of order `p`: three barycentric indices and one
-!! axial index. Vertices, edges, triangular faces, quadrilateral faces,
-!! interior.
+  !! Lattice of a wedge of order `p`: three barycentric indices and one
+  !! axial index. Vertices, edges, triangular faces, quadrilateral faces,
+  !! interior.
 
   integer, intent(in) :: p
   integer, allocatable :: a(:,:)
@@ -1064,7 +1064,7 @@ pure function wedge_lattice(p) result(a)
 end function wedge_lattice
 
 pure subroutine add_edge(a, n, va, vb, p)
-!! Append the `p-1` interior lattice points of the edge from `va` to `vb`
+  !! Append the `p-1` interior lattice points of the edge from `va` to `vb`
 
   integer, intent(inout) :: a(:,:)   !! Lattice
   integer, intent(inout) :: n        !! Number of points so far
