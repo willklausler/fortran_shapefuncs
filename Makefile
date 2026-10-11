@@ -17,6 +17,7 @@ FFLAGS ?= -O2
 PREFIX ?= /usr/local
 
 B := build/make
+CUBATURES_TAG ?= v0.2.0
 CUBATURES ?= $(B)/fortran_cubatures/src/cubatures.f90
 LIB := $(B)/libfortran_shapefuncs.a
 DEMOS := $(patsubst example/%.f90,$(B)/%,$(wildcard example/demo_*.f90))
@@ -27,7 +28,7 @@ PROGS := $(B)/test_shapefuncs $(DEMOS) $(B)/interpolation_convergence
 all: $(LIB) $(PROGS)
 
 $(B)/fortran_cubatures/src/cubatures.f90:
-	git clone --depth 1 https://github.com/willklausler/fortran_cubatures $(B)/fortran_cubatures
+	git clone --depth 1 --branch $(CUBATURES_TAG) https://github.com/willklausler/fortran_cubatures $(B)/fortran_cubatures
 
 # Compiling inside $(B) puts the .mod files there for every compiler.
 $(LIB): src/shapefuncs.f90 $(CUBATURES)

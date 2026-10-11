@@ -2,11 +2,22 @@ cff-version: 1.2.0
 message: "If you use this software, please cite it as below."
 title: "fortran_shapefuncs: Finite element shape functions, including mapped infinite elements"
 type: software
+abstract: >-
+  fortran_shapefuncs is a Fortran module, shapefuncs, with the derived type
+  shapefunc: the shape functions of a finite element and their first and
+  second derivatives at the points of a cubature from fortran_cubatures.
+  It covers lines, triangles, quadrilaterals, tetrahedra, hexahedra and
+  wedges of any order, serendipity quadrilaterals and hexahedra of orders 1
+  to 3, and the mapped infinite elements of Zienkiewicz, Emson and Bettess.
+  Nodes are numbered hierarchically, and the caller can permute the
+  numbering. Every element is checked by function-space reproduction tests.
+  It is Fortran 2018 and builds with fpm or make.
 authors:
   - family-names: Klausler
     given-names: Will
+    orcid: "https://orcid.org/0009-0000-4313-3696"
 version: 0.2.0
-date-released: 2026-10-10
+date-released: 2026-10-11
 license: MIT
 repository-code: "https://github.com/willklausler/fortran_shapefuncs"
 url: "https://willklausler.github.io/fortran_shapefuncs/"

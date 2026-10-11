@@ -10,7 +10,7 @@ categories = ["numerical"]
 keywords = ["shape-functions", "finite-element", "infinite-element", "interpolation"]
 
 [dependencies]
-fortran_cubatures = { git = "https://github.com/willklausler/fortran_cubatures" }
+fortran_cubatures = { git = "https://github.com/willklausler/fortran_cubatures", tag = "v0.2.0" }
 
 [features]
 debug.gfortran.flags = "-g -Wall -fbacktrace -fcheck=all -Wextra -Wpedantic -Wuninitialized -Wmaybe-uninitialized -Wimplicit-interface -Wimplicit-procedure -Warray-temporaries -Wrealloc-lhs -finit-real=snan -finit-integer=-2147483648 -finit-logical=true -fstack-protector-all"

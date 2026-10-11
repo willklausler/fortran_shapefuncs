@@ -17,13 +17,14 @@ its conventions are in `llms.txt`; read it before changing behaviour.
 
 The dependency `fortran_cubatures` (module `cubatures`) provides `cubature` and
 the element constants. fpm fetches it; the Makefile clones it into
-`build/make` unless `CUBATURES` points to its `src/cubatures.f90`.
+`build/make` unless `CUBATURES` points to its `src/cubatures.f90`. Both pin the
+same tag: bump the cubatures tag in `fpm.toml` and the Makefile (`CUBATURES_TAG`) together.
 
 ## Commands
 
 ```sh
 pip install ford                     # once
-fpm update                           # fetch the latest fortran_cubatures
+fpm update                           # fetch fortran_cubatures after changing its tag
 fpm test --profile debug             # fast check, gfortran
 fpm test --profile release
 fpm run --example --all

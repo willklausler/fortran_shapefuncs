@@ -1,9 +1,9 @@
 # fortran_shapefuncs
 
-> Fortran module `shapefuncs`: the derived type `shapefunc`, which holds the shape functions of a finite element and their first and second derivatives at the points of a `cubature` from fortran_cubatures. Lines, triangles, quadrilaterals, tetrahedra, hexahedra and wedges of any order, serendipity quadrilaterals and hexahedra, mapped infinite elements, and a node numbering that the caller can permute. Fortran 2008, fpm or make. This file is the complete API reference for tools and coding agents; it is checked against the source in CI.
+> Fortran module `shapefuncs`: the derived type `shapefunc`, which holds the shape functions of a finite element and their first and second derivatives at the points of a `cubature` from fortran_cubatures. Lines, triangles, quadrilaterals, tetrahedra, hexahedra and wedges of any order, serendipity quadrilaterals and hexahedra, mapped infinite elements, and a node numbering that the caller can permute. Fortran 2018, fpm or make. This file is the complete API reference for tools and coding agents; it is checked against the source in CI.
 
 Use: `use shapefuncs` (everything) or `use shapefuncs, only: shapefunc, SHP_INF, ...`, together with `use cubatures` for `cubature` and the element constants `CUB_LIN` ... `CUB_WED`.
-fpm dependency: `fortran_shapefuncs = { git = "https://github.com/willklausler/fortran_shapefuncs" }` (it pulls in fortran_cubatures).
+fpm dependency: `fortran_shapefuncs = { git = "https://github.com/willklausler/fortran_shapefuncs", tag = "v0.2.0" }` (it pulls in fortran_cubatures v0.2.0).
 Kinds are not exported: values and coordinates are `real64` from `iso_fortran_env`.
 
 ## Conventions (read first)
@@ -146,7 +146,7 @@ For an affine element of order p, the mass matrix needs a cubature of degree 2p 
 
 ## Compiler notes
 
-Tested in CI with gfortran 13 and 14 (Linux, macOS, Windows), ifx 2026 (Linux, Windows), LLVM flang 21 and nvfortran 26 (Linux). No compiler-specific code and no known compiler limitations.
+Tested in CI with gfortran 14 (Linux, macOS, Windows), gfortran 13 (Linux), ifx 2026 (Linux, Windows), LLVM flang 21 and nvfortran 26 (Linux). No compiler-specific code and no known compiler limitations.
 
 ## Differs from
 

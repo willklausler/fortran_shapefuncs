@@ -48,10 +48,12 @@ With [fpm](https://fpm.fortran-lang.org) 0.13 or later, add to your `fpm.toml`:
 
 ```toml
 [dependencies]
-fortran_shapefuncs = { git = "https://github.com/willklausler/fortran_shapefuncs" }
+fortran_shapefuncs = { git = "https://github.com/willklausler/fortran_shapefuncs", tag = "v0.2.0" }
 ```
 
-With make, which clones fortran_cubatures and builds
+It pulls in fortran_cubatures v0.2.0.
+
+With make, which clones fortran_cubatures v0.2.0 and builds
 `build/make/libfortran_shapefuncs.a` (both modules) and the module files:
 
 ```sh
@@ -72,7 +74,8 @@ CI tests every push on:
 
 | Compiler | Linux | macOS | Windows |
 | --- | --- | --- | --- |
-| gfortran 13, 14 | yes | yes | yes |
+| gfortran 14 | yes | yes | yes |
+| gfortran 13 | yes | | |
 | ifx 2026 | yes | | yes |
 | LLVM flang 21 | yes | | |
 | nvfortran 26 | yes | | |
@@ -93,8 +96,8 @@ into the solvers. Solvers such as [Elmer](https://github.com/ElmerCSC/elmerfem)
 keep their shape functions inside. This package covers all six FE elements of
 any order, serendipity and mapped infinite elements, through one derived type
 that works with fortran_cubatures. Every element is verified by
-function-space reproduction tests, and it is packaged for fpm and tested on
-several compilers.
+function-space reproduction tests, and it is packaged for fpm and tested with
+gfortran, ifx, LLVM flang and nvfortran on Linux, macOS and Windows.
 
 ## References
 
